@@ -5,9 +5,9 @@ class AppText {
   bool get isBn => code == 'bn';
 
   String get appName => 'Shop Manager';
-  String get splashTagline => isBn
-      ? 'ছোট দোকানের সহজ ম্যানেজমেন্ট'
-      : 'Small Store Management System';
+  String get splashTagline => 'Small Business\nSmall Store Management System';
+  String get splashSubtitle => 'Small Business';
+  String get splashSystem => 'Small Store Management System';
 
   String get next => isBn ? 'পরবর্তী' : 'Next';
   String get skip => isBn ? 'এড়িয়ে যান' : 'Skip';

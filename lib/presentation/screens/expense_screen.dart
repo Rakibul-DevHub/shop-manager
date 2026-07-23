@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
+import '../../core/l10n/app_text.dart';
 import '../state/shop_store.dart';
-import '../theme/app_colors.dart';
-import '../widgets/common_widgets.dart';
-import '../widgets/offline_badge.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/offline_badge.dart';
 
 class ExpenseScreen extends StatefulWidget {
   const ExpenseScreen({super.key});

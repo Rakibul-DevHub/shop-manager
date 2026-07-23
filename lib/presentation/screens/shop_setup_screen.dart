@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
+import '../../core/l10n/app_text.dart';
 import '../state/shop_store.dart';
-import '../theme/app_colors.dart';
-import '../widgets/common_widgets.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/tap_mark.dart';
 
 class ShopSetupScreen extends StatefulWidget {
   const ShopSetupScreen({super.key});
@@ -63,6 +64,10 @@ class _ShopSetupScreenState extends State<ShopSetupScreen> {
                 style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
               ),
               const SizedBox(height: 28),
+              const TapHint(
+                number: 1,
+                text: 'Enter shop name, then tap a shop type',
+              ),
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -96,6 +101,10 @@ class _ShopSetupScreenState extends State<ShopSetupScreen> {
                 }).toList(),
               ),
               const SizedBox(height: 36),
+              const TapHint(
+                number: 2,
+                text: 'Tap এখনই শুরু করুন to open the app',
+              ),
               PrimaryButton(
                 label: _loading ? '...' : t.startNow,
                 onPressed: _loading ? null : _submit,

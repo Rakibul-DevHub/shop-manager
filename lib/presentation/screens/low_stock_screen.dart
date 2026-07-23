@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
+import '../../core/l10n/app_text.dart';
 import '../state/shop_store.dart';
-import '../widgets/offline_badge.dart';
-import '../widgets/product_list_tile.dart';
+import '../../core/widgets/offline_badge.dart';
+import '../../core/widgets/product_list_tile.dart';
 
 class LowStockScreen extends StatelessWidget {
   const LowStockScreen({super.key});

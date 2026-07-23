@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
+import '../../core/l10n/app_text.dart';
 import '../state/shop_store.dart';
-import '../theme/app_colors.dart';
-import '../widgets/offline_badge.dart';
-import '../widgets/screen_header.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/offline_badge.dart';
+import '../../core/widgets/screen_header.dart';
+import '../../core/widgets/tap_mark.dart';
 import 'daily_report_screen.dart';
 import 'expense_screen.dart';
 import 'low_stock_screen.dart';
@@ -69,6 +70,13 @@ class MoreScreen extends StatelessWidget {
             title: t.moreTitle,
             subtitle: t.moreHint,
             trailing: OfflineBadge(label: t.offline),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TapHint(
+              number: 1,
+              text: 'Tap a row: Report / Expense / Low stock / Settings',
+            ),
           ),
           ...items.map(
             (item) => Padding(

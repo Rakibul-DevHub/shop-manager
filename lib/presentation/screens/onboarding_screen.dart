@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
 import '../state/shop_store.dart';
-import '../theme/app_colors.dart';
-import '../widgets/common_widgets.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/tap_mark.dart';
 
+/// PDF Onboard 1–2: Monitor + Next
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -18,6 +19,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _index = 0;
   bool _finishing = false;
 
+  final _pages = const [
+    _OnboardPage(
+      icon: Icons.monitor_heart_outlined,
+      title: 'Monitor',
+      subtitle: 'Monitor Everything Anywhere',
+    ),
+    _OnboardPage(
+      icon: Icons.point_of_sale_rounded,
+      title: 'Quick Sell',
+      subtitle: 'Code দিয়ে বিক্রি শেষ করুন',
+    ),
+  ];
+
   @override
   void dispose() {
     _controller.dispose();
@@ -28,91 +42,59 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_finishing) return;
     setState(() => _finishing = true);
     await context.read<ShopStore>().completeOnboarding();
-    // AppGate switches to LanguageScreen automatically.
   }
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<ShopStore>();
-    final t = AppText(store.languageCode);
-    final pages = [
-      (
-        Icons.insights_rounded,
-        store.languageCode == 'bn' ? 'মনিটর' : 'Monitor',
-        store.languageCode == 'bn'
-            ? 'সবকিছু যেকোনো জায়গা থেকে দেখুন'
-            : 'Monitor Everything Anywhere',
-        store.languageCode == 'bn'
-            ? 'বিক্রি, স্টক ও বাকি — সব এক জায়গায়।'
-            : 'Track sales, stock and dues in one place.',
-      ),
-      (
-        Icons.point_of_sale_rounded,
-        t.quickSell,
-        store.languageCode == 'bn'
-            ? 'কোড দিয়ে বিক্রি শেষ করুন'
-            : 'Finish sales with product codes',
-        store.languageCode == 'bn'
-            ? 'পণ্য খুঁজুন, পরিমাণ বাড়ান, তাড়াতাড়ি বিক্রি সম্পন্ন করুন।'
-            : 'Find products, adjust qty, and complete sales fast.',
-      ),
-    ];
-
     return Scaffold(
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(onPressed: _finish, child: Text(t.skip)),
-              ),
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
-                  itemCount: pages.length,
+                  itemCount: _pages.length,
                   onPageChanged: (value) => setState(() => _index = value),
                   itemBuilder: (context, index) {
-                    final page = pages[index];
+                    final page = _pages[index];
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 120,
-                          height: 120,
+                          width: 140,
+                          height: 140,
                           decoration: BoxDecoration(
                             color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(30),
+                            shape: BoxShape.circle,
                           ),
-                          child: Icon(page.$1, size: 56, color: AppColors.primary),
-                        ),
-                        const SizedBox(height: 32),
-                        Text(
-                          page.$2,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
+                          child: Icon(
+                            page.icon,
+                            size: 64,
+                            color: AppColors.primary,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 36),
                         Text(
-                          page.$3,
+                          page.title,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          page.$4,
+                          page.subtitle,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 15,
-                            color: AppColors.textSecondary,
-                            height: 1.45,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                            height: 1.35,
                           ),
                         ),
                       ],
@@ -122,12 +104,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(pages.length, (i) {
+                children: List.generate(_pages.length, (i) {
                   final active = i == _index;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                  return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: active ? 22 : 8,
+                    width: active ? 20 : 8,
                     height: 8,
                     decoration: BoxDecoration(
                       color: active ? AppColors.primary : AppColors.border,
@@ -136,13 +117,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   );
                 }),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
+              const TapHint(
+                number: 1,
+                text: 'Tap Next at the bottom to continue',
+              ),
               PrimaryButton(
-                label: t.next,
+                label: 'Next',
                 onPressed: _finishing
                     ? null
                     : () {
-                        if (_index < pages.length - 1) {
+                        if (_index < _pages.length - 1) {
                           _controller.nextPage(
                             duration: const Duration(milliseconds: 280),
                             curve: Curves.easeOut,
@@ -158,4 +143,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
   }
+}
+
+class _OnboardPage {
+  const _OnboardPage({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
 }

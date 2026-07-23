@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
-import '../models/product.dart';
+import '../../core/l10n/app_text.dart';
+import '../../domain/entities/product.dart';
 import '../state/shop_store.dart';
-import '../theme/app_colors.dart';
-import '../widgets/common_widgets.dart';
-import '../widgets/offline_badge.dart';
-import '../widgets/screen_header.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/offline_badge.dart';
+import '../../core/widgets/screen_header.dart';
+import '../../core/widgets/tap_mark.dart';
 
 class QuickSellScreen extends StatefulWidget {
   const QuickSellScreen({super.key, this.standalone = false});
@@ -146,6 +147,12 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             children: [
+              const _SellSteps(),
+              const SizedBox(height: 12),
+              const TapHint(
+                number: 1,
+                text: 'Type code e.g. TS001-L then tap Search',
+              ),
               TextField(
                 controller: _codeController,
                 textCapitalization: TextCapitalization.characters,
@@ -291,6 +298,10 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                const TapHint(
+                  number: 2,
+                  text: 'Adjust qty / price, then tap বিক্রি সম্পন্ন',
+                ),
                 PrimaryButton(
                   label: _saving ? '...' : t.completeSale,
                   onPressed: _saving ? null : _completeSale,
@@ -321,5 +332,58 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
       return Scaffold(body: SafeArea(child: body));
     }
     return SafeArea(child: body);
+  }
+}
+
+class _SellSteps extends StatelessWidget {
+  const _SellSteps();
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = ['কোড দিন', 'পণ্য দেখুন', '+/- চাপুন', 'বিক্রি শেষ'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'বিক্রি করার সহজ নিয়ম',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            for (var i = 0; i < steps.length; i++) ...[
+              if (i > 0)
+                const Expanded(
+                  child: Divider(color: AppColors.border, thickness: 1),
+                ),
+              Column(
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      '${i + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    steps[i],
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
   }
 }

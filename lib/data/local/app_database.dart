@@ -1,11 +1,11 @@
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
-import '../models/customer.dart';
-import '../models/expense.dart';
-import '../models/product.dart';
-import '../models/sale.dart';
-import '../models/user.dart';
+import '../../domain/entities/customer.dart';
+import '../../domain/entities/expense.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/entities/sale.dart';
+import '../../domain/entities/user.dart';
 
 class AppDatabase {
   AppDatabase._();

@@ -1,20 +1,20 @@
 # Shop Manager
 
-Offline-first Flutter app for small shops (Bangla / English).
+Offline-first Flutter POS for small shops (Bangla / English).
 
-## What works
+## Architecture
 
-- Local SQLite database (no internet required)
-- Sign up / Sign in (demo OTP: `1234`)
-- Shop setup
-- Quick Sell with flexible price + cash/due
-- Product add / search / stock updates
-- Due book + payment collection
-- Expenses
-- Daily sales report + profit
-- Low stock alerts
-- Settings (language, shop, low-stock threshold)
-- Logout + session restore
+```
+lib/
+  app/                 # MaterialApp + Provider wiring
+  core/                # theme, l10n, shared widgets, constants
+  domain/              # entities + ShopRepository contract
+  data/                # SQLite (local) + LocalShopRepository
+  presentation/        # ShopStore + screens
+  main.dart
+```
+
+**Rule:** UI talks to `ShopStore` → `ShopRepository` → SQLite. Screens never import `sqflite` / `AppDatabase`.
 
 ## Run
 
@@ -23,13 +23,9 @@ flutter pub get
 flutter run
 ```
 
-## Demo flow
+## Flow (no login)
 
-1. Onboarding → choose language
-2. Set shop name + type
-3. Sell with code `TS001-L`, `CH05`, or `RC010`
-4. Try due sale with customer name/phone
-5. Collect payment from বাকি tab
-6. Check home dashboard + daily report
+Splash → Onboarding → Language → Shop Setup → Home  
+Tabs: হোম · বিক্রি · পণ্য · বাকি · আরও
 
-No login/email/OTP required (frontend-only flow).
+Demo codes: `TS001-L`, `CH05`, `RC010`

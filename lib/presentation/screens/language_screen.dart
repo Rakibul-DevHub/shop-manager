@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
 import '../state/shop_store.dart';
-import '../theme/app_colors.dart';
-import '../widgets/common_widgets.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/tap_mark.dart';
 
+/// PDF Language Selection
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
 
@@ -25,48 +26,61 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppText(_selected);
-
     return Scaffold(
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
-              Text(
-                t.languageTitle,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+              const SizedBox(height: 20),
+              const Text(
+                'Language Selection',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              Text(
-                t.chooseLanguage,
-                style: const TextStyle(color: AppColors.textSecondary),
+              const Text(
+                'ভাষা নির্বাচন করুন',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 6),
+              const Text(
+                'Choose your app language',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+              ),
+              const SizedBox(height: 32),
+              const TapHint(
+                number: 1,
+                text: 'Tap বাংলা or English to select',
+              ),
               _LanguageCard(
                 title: 'বাংলা',
-                subtitle: 'Primary',
                 selected: _selected == 'bn',
                 onTap: () => setState(() => _selected = 'bn'),
               ),
               const SizedBox(height: 12),
               _LanguageCard(
                 title: 'English',
-                subtitle: 'Optional',
                 selected: _selected == 'en',
                 onTap: () => setState(() => _selected = 'en'),
               ),
               const Spacer(),
+              const TapHint(
+                number: 2,
+                text: 'Then tap Next to continue',
+              ),
               PrimaryButton(
-                label: _saving ? '...' : t.continueLabel,
+                label: _saving ? '...' : 'Next',
                 onPressed: _saving
                     ? null
                     : () async {
                         setState(() => _saving = true);
                         await context.read<ShopStore>().setLanguage(_selected);
-                        // AppGate switches to ShopSetup / Home automatically.
                       },
               ),
             ],
@@ -80,13 +94,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
 class _LanguageCard extends StatelessWidget {
   const _LanguageCard({
     required this.title,
-    required this.subtitle,
     required this.selected,
     required this.onTap,
   });
 
   final String title;
-  final String subtitle;
   final bool selected;
   final VoidCallback onTap;
 
@@ -100,7 +112,7 @@ class _LanguageCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
@@ -111,22 +123,12 @@ class _LanguageCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               Icon(

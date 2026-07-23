@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
-import '../models/product.dart';
+import '../../core/l10n/app_text.dart';
+import '../../domain/entities/product.dart';
 import '../state/shop_store.dart';
-import '../widgets/offline_badge.dart';
-import '../widgets/product_list_tile.dart';
-import '../widgets/screen_header.dart';
+import '../../core/widgets/offline_badge.dart';
+import '../../core/widgets/product_list_tile.dart';
+import '../../core/widgets/screen_header.dart';
+import '../../core/widgets/tap_mark.dart';
 import 'add_product_screen.dart';
 import 'quick_sell_screen.dart';
 
@@ -53,6 +54,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: TapHint(
+              number: 1,
+              text: 'Tap নতুন পণ্য যোগ করুন to add stock',
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SizedBox(
