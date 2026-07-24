@@ -9,11 +9,19 @@ import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/screen_header.dart';
 import '../../core/widgets/tap_mark.dart';
+import 'barcode_scan_screen.dart';
 
 class QuickSellScreen extends StatefulWidget {
-  const QuickSellScreen({super.key, this.standalone = false});
+  const QuickSellScreen({
+    super.key,
+    this.standalone = false,
+    this.initialCode,
+    this.openScannerOnStart = false,
+  });
 
   final bool standalone;
+  final String? initialCode;
+  final bool openScannerOnStart;
 
   @override
   State<QuickSellScreen> createState() => _QuickSellScreenState();
@@ -30,6 +38,23 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
   bool _flexiblePrice = false;
   String _paymentType = 'cash';
   bool _saving = false;
+  bool _scannerOpened = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final code = widget.initialCode?.trim();
+    if (code != null && code.isNotEmpty) {
+      _codeController.text = code;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _findProduct();
+      });
+    } else if (widget.openScannerOnStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openScanner();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -49,6 +74,19 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
   }
 
   double get _total => _unitPrice * _qty;
+
+  Future<void> _openScanner() async {
+    if (_scannerOpened) return;
+    _scannerOpened = true;
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScanScreen()),
+    );
+    _scannerOpened = false;
+    if (!mounted) return;
+    if (code == null || code.trim().isEmpty) return;
+    _codeController.text = code.trim();
+    _findProduct();
+  }
 
   void _findProduct() {
     final store = context.read<ShopStore>();
@@ -151,7 +189,7 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
               const SizedBox(height: 12),
               const TapHint(
                 number: 1,
-                text: 'Type code e.g. TS001-L then tap Search',
+                text: 'Scan QR/barcode with the camera, or type a code',
               ),
               TextField(
                 controller: _codeController,
@@ -159,7 +197,11 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
                 decoration: InputDecoration(
                   labelText: t.productCode,
                   hintText: 'TS001-L',
-                  prefixIcon: const Icon(Icons.qr_code_scanner),
+                  prefixIcon: IconButton(
+                    tooltip: t.scanCodeTitle,
+                    onPressed: _openScanner,
+                    icon: const Icon(Icons.qr_code_scanner),
+                  ),
                   suffixIcon: IconButton(
                     onPressed: _findProduct,
                     icon: const Icon(Icons.search),

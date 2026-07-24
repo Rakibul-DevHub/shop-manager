@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/l10n/app_text.dart';
-import '../state/shop_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/tap_mark.dart';
+import '../state/shop_store.dart';
+import 'daily_report_screen.dart';
+import 'due_customers_screen.dart';
+import 'expense_screen.dart';
+import 'low_stock_screen.dart';
+import 'products_screen.dart';
 import 'quick_sell_screen.dart';
+import 'sale_history_screen.dart';
 
-/// PDF Home Dashboard: Quick Sell + category shortcuts
+/// Home: shop name + Quick Sell + sales / cost / stock summary.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -38,7 +44,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      t.homeTitle,
+                      t.shopSummary,
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -53,7 +59,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 20),
           const TapHint(
             number: 1,
-            text: 'Tap the green Quick Sell banner to open POS',
+            text: 'Tap Quick Sell to open the rear camera scanner',
           ),
           Material(
             color: AppColors.primary,
@@ -62,13 +68,19 @@ class HomeScreen extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const QuickSellScreen(standalone: true),
+                    builder: (_) => const QuickSellScreen(
+                      standalone: true,
+                      openScannerOnStart: true,
+                    ),
                   ),
                 );
               },
               borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 22,
+                ),
                 child: Row(
                   children: [
                     const TapMark(1, tooltip: 'Tap here → Quick Sell'),
@@ -115,85 +127,124 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 22),
           Row(
             children: [
-              Text(
-                t.shopType,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  t.todaySummary,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
-              const TapMark(2, tooltip: 'Or tap a category → Quick Sell'),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const DailyReportScreen(),
+                    ),
+                  );
+                },
+                child: Text(t.viewReport),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           const TapHint(
             number: 2,
-            text: 'Or tap any category tile (same as Quick Sell)',
+            text: 'Tap a summary card for history, stock, dues, or expense',
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 1.55,
-            children: ShopStore.shopTypes.map((type) {
-              return Material(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const QuickSellScreen(standalone: true),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _iconForType(type),
-                          color: AppColors.primary,
-                          size: 26,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          type,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-          Row(
+            childAspectRatio: 1.45,
             children: [
-              Expanded(
-                child: _MiniStat(
-                  label: t.todaySales,
-                  value: formatTaka(store.todaySalesTotal),
-                ),
+              _SummaryCard(
+                icon: Icons.point_of_sale_outlined,
+                label: t.todaySales,
+                value: formatTaka(store.todaySalesTotal),
+                hint: '${store.todayPieces} ${t.itemsUnit}',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SaleHistoryScreen(),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _MiniStat(
-                  label: t.due,
-                  value: formatTaka(store.totalDue),
-                ),
+              _SummaryCard(
+                icon: Icons.trending_up,
+                label: t.profit,
+                value: formatTaka(store.todayProfit),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const DailyReportScreen(),
+                    ),
+                  );
+                },
+              ),
+              _SummaryCard(
+                icon: Icons.inventory_2_outlined,
+                label: t.stockItems,
+                value: '${store.totalStockQty} ${t.itemsUnit}',
+                hint: '${t.stockValue}: ${formatTaka(store.stockCostValue)}',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(),
+                        body: const ProductsScreen(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _SummaryCard(
+                icon: Icons.warning_amber_rounded,
+                label: t.lowStock,
+                value: '${store.lowStockProducts.length}',
+                tint: store.lowStockProducts.isEmpty
+                    ? AppColors.primaryLight
+                    : const Color(0xFFFFF1E8),
+                iconColor: store.lowStockProducts.isEmpty
+                    ? AppColors.primary
+                    : AppColors.accent,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LowStockScreen(),
+                    ),
+                  );
+                },
+              ),
+              _SummaryCard(
+                icon: Icons.account_balance_wallet_outlined,
+                label: t.due,
+                value: formatTaka(store.totalDue),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(),
+                        body: const DueCustomersScreen(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _SummaryCard(
+                icon: Icons.receipt_long_outlined,
+                label: t.todayExpense,
+                value: formatTaka(store.todayExpenseTotal),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ExpenseScreen()),
+                  );
+                },
               ),
             ],
           ),
@@ -201,44 +252,86 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  IconData _iconForType(String type) {
-    if (type.contains('মুদি')) return Icons.shopping_basket_outlined;
-    if (type.contains('কাপড়')) return Icons.checkroom_outlined;
-    if (type.contains('মোবাইল')) return Icons.phone_android_outlined;
-    if (type.contains('কসমেটিকস')) return Icons.spa_outlined;
-    if (type.contains('ফাস্ট')) return Icons.fastfood_outlined;
-    return Icons.storefront_outlined;
-  }
 }
 
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.value});
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.hint,
+    this.tint = AppColors.primaryLight,
+    this.iconColor = AppColors.primary,
+  });
 
+  final IconData icon;
   final String label;
   final String value;
+  final String? hint;
+  final VoidCallback onTap;
+  final Color tint;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: tint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const Spacer(),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (hint != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  hint!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

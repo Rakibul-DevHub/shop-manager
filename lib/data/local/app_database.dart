@@ -5,6 +5,7 @@ import '../../domain/entities/customer.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/sale.dart';
+import '../../domain/entities/staff.dart';
 import '../../domain/entities/user.dart';
 
 class AppDatabase {
@@ -25,14 +26,18 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await _createV1(db);
         await _createSettings(db);
+        await _createStaff(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await _createSettings(db);
+        }
+        if (oldVersion < 3) {
+          await _createStaff(db);
         }
       },
     );
@@ -43,6 +48,26 @@ class AppDatabase {
       CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _createStaff(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS staff (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        role TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        can_sell INTEGER NOT NULL DEFAULT 1,
+        can_products INTEGER NOT NULL DEFAULT 0,
+        can_dues INTEGER NOT NULL DEFAULT 0,
+        can_expenses INTEGER NOT NULL DEFAULT 0,
+        can_reports INTEGER NOT NULL DEFAULT 0,
+        can_settings INTEGER NOT NULL DEFAULT 0,
+        can_manage_staff INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
       )
     ''');
   }
@@ -299,13 +324,23 @@ class AppDatabase {
   }
 
   Future<List<SaleRecord>> getSalesForDay(DateTime day) async {
-    final db = await database;
     final start = DateTime(day.year, day.month, day.day);
     final end = start.add(const Duration(days: 1));
+    return getSalesInRange(start, end);
+  }
+
+  Future<List<SaleRecord>> getSalesInRange(DateTime start, DateTime end) async {
+    final db = await database;
+    final rangeStart = DateTime(start.year, start.month, start.day);
+    final rangeEndExclusive =
+        DateTime(end.year, end.month, end.day).add(const Duration(days: 1));
     final rows = await db.query(
       'sales',
       where: 'sold_at >= ? AND sold_at < ?',
-      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      whereArgs: [
+        rangeStart.toIso8601String(),
+        rangeEndExclusive.toIso8601String(),
+      ],
       orderBy: 'sold_at DESC',
     );
     return rows.map(SaleRecord.fromMap).toList();
@@ -322,6 +357,33 @@ class AppDatabase {
     return rows
         .map((r) => DateTime.parse(r['day']! as String))
         .toList();
+  }
+
+  // ---- Staff ----
+  Future<List<StaffMember>> getStaff() async {
+    final db = await database;
+    final rows = await db.query('staff', orderBy: 'name COLLATE NOCASE ASC');
+    return rows.map(StaffMember.fromMap).toList();
+  }
+
+  Future<int> insertStaff(StaffMember staff) async {
+    final db = await database;
+    return db.insert('staff', staff.toMap()..remove('id'));
+  }
+
+  Future<void> updateStaff(StaffMember staff) async {
+    final db = await database;
+    await db.update(
+      'staff',
+      staff.toMap(),
+      where: 'id = ?',
+      whereArgs: [staff.id],
+    );
+  }
+
+  Future<void> deleteStaff(int id) async {
+    final db = await database;
+    await db.delete('staff', where: 'id = ?', whereArgs: [id]);
   }
 
   // ---- Expenses ----

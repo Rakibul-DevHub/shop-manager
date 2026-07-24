@@ -2,6 +2,7 @@ import '../../domain/entities/customer.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/sale.dart';
+import '../../domain/entities/staff.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/shop_repository.dart';
 import '../local/app_database.dart';
@@ -95,8 +96,24 @@ class LocalShopRepository implements ShopRepository {
       _db.getSalesForDay(day);
 
   @override
+  Future<List<SaleRecord>> getSalesInRange(DateTime start, DateTime end) =>
+      _db.getSalesInRange(start, end);
+
+  @override
   Future<List<DateTime>> getSaleDays({int limit = 14}) =>
       _db.getSaleDays(limit: limit);
+
+  @override
+  Future<List<StaffMember>> getStaff() => _db.getStaff();
+
+  @override
+  Future<int> insertStaff(StaffMember staff) => _db.insertStaff(staff);
+
+  @override
+  Future<void> updateStaff(StaffMember staff) => _db.updateStaff(staff);
+
+  @override
+  Future<void> deleteStaff(int id) => _db.deleteStaff(id);
 
   @override
   Future<int> insertExpense(Expense expense) => _db.insertExpense(expense);

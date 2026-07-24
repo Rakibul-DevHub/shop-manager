@@ -1,13 +1,17 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../domain/analytics/report_insights.dart';
 import '../../domain/entities/customer.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/sale.dart';
+import '../../domain/entities/staff.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/shop_repository.dart';
 import '../../data/repositories/local_shop_repository.dart';
+
+enum ReportPreset { today, thisWeek, thisMonth, previousMonth, custom }
 
 /// Presentation state — talks to [ShopRepository] only (not SQLite directly).
 class ShopStore extends ChangeNotifier {
@@ -19,17 +23,37 @@ class ShopStore extends ChangeNotifier {
   bool ready = false;
   bool onboardingDone = false;
   bool languageSelected = false;
-  String languageCode = 'bn';
+
+  /// Default English; Bangla only after the user selects it.
+  String languageCode = 'en';
   AppUser? currentUser;
   ShopProfile? shop;
+  OwnerProfile ownerProfile = const OwnerProfile();
 
   List<Product> products = [];
   List<Customer> dueCustomers = [];
   List<Expense> expenses = [];
+  List<StaffMember> staff = [];
   List<SaleRecord> todaySales = [];
   List<SaleRecord> reportSales = [];
-  DateTime reportDay = DateTime.now();
+  List<SaleRecord> historySales = [];
+  /// Sales used only for the trend chart (always a multi-day window).
+  List<SaleRecord> trendSales = [];
   List<DateTime> saleDays = [];
+
+  DateTime reportStart = DateTime.now();
+  DateTime reportEnd = DateTime.now();
+  ReportPreset reportPreset = ReportPreset.today;
+
+  DateTime historyStart = DateTime.now();
+  DateTime historyEnd = DateTime.now();
+  ReportPreset historyPreset = ReportPreset.today;
+
+  DateTime trendStart = DateTime.now();
+  DateTime trendEnd = DateTime.now();
+
+  /// Kept for older call sites; maps to a single-day range.
+  DateTime get reportDay => reportStart;
 
   static const shopTypes = AppConstants.shopTypes;
   static const expenseTypes = AppConstants.expenseTypes;
@@ -50,19 +74,67 @@ class ShopStore extends ChangeNotifier {
   double get reportProfit => reportSales.fold(0, (sum, s) => sum + s.profit);
   int get reportPieces => reportSales.fold(0, (sum, s) => sum + s.qty);
 
+  ReportInsights get reportInsights => ReportInsights.fromSales(
+        reportSales,
+        rangeStart: reportStart,
+        rangeEnd: reportEnd,
+      );
+
+  /// Day-by-day sales/profit for the trend graph (filled calendar days).
+  List<DailyTrendPoint> get salesTrendPoints => ReportInsights.fromSales(
+        trendSales,
+        rangeStart: trendStart,
+        rangeEnd: trendEnd,
+      ).dailyTrend;
+
+  double get historySalesTotal =>
+      historySales.fold(0, (sum, s) => sum + s.total);
+  double get historyProfit => historySales.fold(0, (sum, s) => sum + s.profit);
+  int get historyPieces => historySales.fold(0, (sum, s) => sum + s.qty);
+
+  double get reportExpenseTotal {
+    return expenses
+        .where((e) {
+          final d = DateTime(
+            e.createdAt.year,
+            e.createdAt.month,
+            e.createdAt.day,
+          );
+          return !d.isBefore(reportStart) && !d.isAfter(reportEnd);
+        })
+        .fold(0, (sum, e) => sum + e.amount);
+  }
+
+  int get totalStockQty => products.fold(0, (sum, p) => sum + p.stock);
+  double get stockCostValue =>
+      products.fold(0, (sum, p) => sum + (p.costPrice * p.stock));
+  double get todayExpenseTotal {
+    final now = DateTime.now();
+    return expenses
+        .where(
+          (e) =>
+              e.createdAt.year == now.year &&
+              e.createdAt.month == now.month &&
+              e.createdAt.day == now.day,
+        )
+        .fold(0, (sum, e) => sum + e.amount);
+  }
+
   Future<void> init() async {
     try {
       onboardingDone = await _repo.getBoolSetting('onboarding_done');
       languageSelected = await _repo.getBoolSetting('language_selected');
-      languageCode = await _repo.getSetting('language_code') ?? 'bn';
+      languageCode = await _repo.getSetting('language_code') ?? 'en';
 
       final login = await _repo.getSetting('user_login');
       if (login != null && login.isNotEmpty) {
         currentUser = await _repo.findUserByLogin(login);
       }
 
+      await _loadOwnerProfile();
       shop = await _repo.getShop();
       await _repo.seedDemoCatalog();
+      _applyPreset(ReportPreset.today);
       await refreshAll();
     } catch (e, st) {
       debugPrint('ShopStore.init failed: $e\n$st');
@@ -72,15 +144,48 @@ class ShopStore extends ChangeNotifier {
     }
   }
 
+  Future<void> _loadOwnerProfile() async {
+    ownerProfile = OwnerProfile(
+      name: await _repo.getSetting('profile_name') ?? '',
+      phone: await _repo.getSetting('profile_phone') ?? '',
+      email: await _repo.getSetting('profile_email') ?? '',
+    );
+  }
+
   Future<void> refreshAll() async {
     products = await _repo.getProducts();
     dueCustomers = await _repo.getDueCustomers();
     expenses = await _repo.getExpenses();
+    staff = await _repo.getStaff();
     todaySales = await _repo.getSalesForDay(DateTime.now());
     saleDays = await _repo.getSaleDays();
-    reportSales = await _repo.getSalesForDay(reportDay);
+    reportSales = await _repo.getSalesInRange(reportStart, reportEnd);
+    historySales = await _repo.getSalesInRange(historyStart, historyEnd);
+    await _reloadTrendSales();
     shop = await _repo.getShop();
+    await _loadOwnerProfile();
     notifyListeners();
+  }
+
+  /// Trend needs multiple days. If the report range is short, use last 7 days.
+  void _updateTrendWindow() {
+    final end = _dateOnly(reportEnd);
+    final selectedDays = _dateOnly(reportEnd)
+            .difference(_dateOnly(reportStart))
+            .inDays +
+        1;
+    if (selectedDays >= 7) {
+      trendStart = _dateOnly(reportStart);
+      trendEnd = end;
+    } else {
+      trendStart = end.subtract(const Duration(days: 6));
+      trendEnd = end;
+    }
+  }
+
+  Future<void> _reloadTrendSales() async {
+    _updateTrendWindow();
+    trendSales = await _repo.getSalesInRange(trendStart, trendEnd);
   }
 
   Future<void> completeOnboarding() async {
@@ -95,6 +200,22 @@ class ShopStore extends ChangeNotifier {
     languageCode = code;
     languageSelected = true;
     notifyListeners();
+  }
+
+  Future<String?> saveOwnerProfile(OwnerProfile profile) async {
+    if (profile.name.trim().isEmpty) {
+      return languageCode == 'bn' ? 'নাম দিন' : 'Enter your name';
+    }
+    await _repo.setSetting('profile_name', profile.name.trim());
+    await _repo.setSetting('profile_phone', profile.phone.trim());
+    await _repo.setSetting('profile_email', profile.email.trim());
+    ownerProfile = OwnerProfile(
+      name: profile.name.trim(),
+      phone: profile.phone.trim(),
+      email: profile.email.trim(),
+    );
+    notifyListeners();
+    return null;
   }
 
   Future<String?> saveShop({
@@ -117,6 +238,39 @@ class ShopStore extends ChangeNotifier {
     shop = await _repo.getShop();
     notifyListeners();
     return null;
+  }
+
+  Future<String?> saveStaff(StaffMember member) async {
+    if (member.name.trim().isEmpty || member.phone.trim().isEmpty) {
+      return languageCode == 'bn'
+          ? 'নাম ও ফোন দিন'
+          : 'Enter name and phone';
+    }
+    if (member.id == null) {
+      await _repo.insertStaff(
+        member.copyWith(
+          name: member.name.trim(),
+          phone: member.phone.trim(),
+          createdAt: DateTime.now(),
+        ),
+      );
+    } else {
+      await _repo.updateStaff(
+        member.copyWith(
+          name: member.name.trim(),
+          phone: member.phone.trim(),
+        ),
+      );
+    }
+    staff = await _repo.getStaff();
+    notifyListeners();
+    return null;
+  }
+
+  Future<void> deleteStaff(int id) async {
+    await _repo.deleteStaff(id);
+    staff = await _repo.getStaff();
+    notifyListeners();
   }
 
   Future<String?> addProduct(Product product) async {
@@ -253,10 +407,86 @@ class ShopStore extends ChangeNotifier {
     return null;
   }
 
-  Future<void> setReportDay(DateTime day) async {
-    reportDay = DateTime(day.year, day.month, day.day);
-    reportSales = await _repo.getSalesForDay(reportDay);
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  (DateTime start, DateTime end) _rangeForPreset(ReportPreset preset) {
+    final today = _dateOnly(DateTime.now());
+    switch (preset) {
+      case ReportPreset.today:
+        return (today, today);
+      case ReportPreset.thisWeek:
+        final start = today.subtract(Duration(days: today.weekday - 1));
+        return (start, today);
+      case ReportPreset.thisMonth:
+        return (DateTime(today.year, today.month, 1), today);
+      case ReportPreset.previousMonth:
+        final firstThis = DateTime(today.year, today.month, 1);
+        final end = firstThis.subtract(const Duration(days: 1));
+        return (DateTime(end.year, end.month, 1), end);
+      case ReportPreset.custom:
+        return (reportStart, reportEnd);
+    }
+  }
+
+  void _applyPreset(ReportPreset preset) {
+    reportPreset = preset;
+    if (preset == ReportPreset.custom) return;
+    final range = _rangeForPreset(preset);
+    reportStart = range.$1;
+    reportEnd = range.$2;
+  }
+
+  Future<void> setReportPreset(ReportPreset preset) async {
+    _applyPreset(preset);
+    reportSales = await _repo.getSalesInRange(reportStart, reportEnd);
+    await _reloadTrendSales();
     notifyListeners();
+  }
+
+  Future<void> setReportRange(DateTime start, DateTime end) async {
+    reportPreset = ReportPreset.custom;
+    reportStart = _dateOnly(start);
+    reportEnd = _dateOnly(end);
+    if (reportEnd.isBefore(reportStart)) {
+      final tmp = reportStart;
+      reportStart = reportEnd;
+      reportEnd = tmp;
+    }
+    reportSales = await _repo.getSalesInRange(reportStart, reportEnd);
+    await _reloadTrendSales();
+    notifyListeners();
+  }
+
+  Future<void> setReportDay(DateTime day) async {
+    await setReportRange(day, day);
+  }
+
+  Future<void> setHistoryPreset(ReportPreset preset) async {
+    historyPreset = preset;
+    if (preset != ReportPreset.custom) {
+      final range = _rangeForPreset(preset);
+      historyStart = range.$1;
+      historyEnd = range.$2;
+    }
+    historySales = await _repo.getSalesInRange(historyStart, historyEnd);
+    notifyListeners();
+  }
+
+  Future<void> setHistoryRange(DateTime start, DateTime end) async {
+    historyPreset = ReportPreset.custom;
+    historyStart = _dateOnly(start);
+    historyEnd = _dateOnly(end);
+    if (historyEnd.isBefore(historyStart)) {
+      final tmp = historyStart;
+      historyStart = historyEnd;
+      historyEnd = tmp;
+    }
+    historySales = await _repo.getSalesInRange(historyStart, historyEnd);
+    notifyListeners();
+  }
+
+  Future<void> setHistoryDay(DateTime day) async {
+    await setHistoryRange(day, day);
   }
 
   List<Product> searchProducts(String query) {

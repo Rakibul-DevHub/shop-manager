@@ -2,6 +2,7 @@ import '../entities/customer.dart';
 import '../entities/expense.dart';
 import '../entities/product.dart';
 import '../entities/sale.dart';
+import '../entities/staff.dart';
 import '../entities/user.dart';
 
 /// Domain contract for all shop persistence (offline SQLite).
@@ -40,7 +41,14 @@ abstract class ShopRepository {
   // Sales
   Future<int> insertSale(SaleRecord sale);
   Future<List<SaleRecord>> getSalesForDay(DateTime day);
+  Future<List<SaleRecord>> getSalesInRange(DateTime start, DateTime end);
   Future<List<DateTime>> getSaleDays({int limit = 14});
+
+  // Staff
+  Future<List<StaffMember>> getStaff();
+  Future<int> insertStaff(StaffMember staff);
+  Future<void> updateStaff(StaffMember staff);
+  Future<void> deleteStaff(int id);
 
   // Expenses
   Future<int> insertExpense(Expense expense);

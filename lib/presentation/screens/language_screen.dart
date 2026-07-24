@@ -21,7 +21,9 @@ class _LanguageScreenState extends State<LanguageScreen> {
   @override
   void initState() {
     super.initState();
-    _selected = context.read<ShopStore>().languageCode;
+    // Default English unless the user already chose Bangla.
+    final saved = context.read<ShopStore>().languageCode;
+    _selected = saved == 'bn' ? 'bn' : 'en';
   }
 
   @override
@@ -50,24 +52,26 @@ class _LanguageScreenState extends State<LanguageScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Choose your app language',
+                'Default is English. Select বাংলা for Bangla.',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
               ),
               const SizedBox(height: 32),
               const TapHint(
                 number: 1,
-                text: 'Tap বাংলা or English to select',
+                text: 'English is default — tap বাংলা only if you want Bangla',
               ),
               _LanguageCard(
-                title: 'বাংলা',
-                selected: _selected == 'bn',
-                onTap: () => setState(() => _selected = 'bn'),
+                title: 'English',
+                subtitle: 'Default',
+                selected: _selected == 'en',
+                onTap: () => setState(() => _selected = 'en'),
               ),
               const SizedBox(height: 12),
               _LanguageCard(
-                title: 'English',
-                selected: _selected == 'en',
-                onTap: () => setState(() => _selected = 'en'),
+                title: 'বাংলা',
+                subtitle: 'ঐচ্ছিক',
+                selected: _selected == 'bn',
+                onTap: () => setState(() => _selected = 'bn'),
               ),
               const Spacer(),
               const TapHint(
@@ -96,9 +100,11 @@ class _LanguageCard extends StatelessWidget {
     required this.title,
     required this.selected,
     required this.onTap,
+    this.subtitle,
   });
 
   final String title;
+  final String? subtitle;
   final bool selected;
   final VoidCallback onTap;
 
@@ -123,12 +129,27 @@ class _LanguageCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               Icon(

@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/l10n/app_text.dart';
-import '../state/shop_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/screen_header.dart';
 import '../../core/widgets/tap_mark.dart';
-import 'daily_report_screen.dart';
-import 'expense_screen.dart';
-import 'low_stock_screen.dart';
+import '../state/shop_store.dart';
+import 'profile_screen.dart';
 import 'settings_screen.dart';
+import 'staff_form_screen.dart';
+import 'staff_list_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -19,35 +19,50 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = context.watch<ShopStore>();
     final t = AppText(store.languageCode);
+    final profileName = store.ownerProfile.name.trim().isEmpty
+        ? t.ownerRole
+        : store.ownerProfile.name;
 
     final items = [
       _MoreItem(
-        title: t.report,
-        subtitle: t.reportHint,
-        icon: Icons.bar_chart_rounded,
+        title: t.profile,
+        subtitle: '$profileName • ${t.profileHint}',
+        icon: Icons.person_outline,
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const DailyReportScreen()),
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
           );
         },
       ),
       _MoreItem(
-        title: t.expense,
-        subtitle: t.expenseHint,
-        icon: Icons.receipt_long_outlined,
+        title: t.addStaff,
+        subtitle: t.addStaffHint,
+        icon: Icons.person_add_alt_1_outlined,
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ExpenseScreen()),
+            MaterialPageRoute(builder: (_) => const StaffFormScreen()),
           );
         },
       ),
       _MoreItem(
-        title: t.lowStock,
-        subtitle: t.lowStockHint,
-        icon: Icons.warning_amber_rounded,
+        title: t.manageStaff,
+        subtitle: '${t.manageStaffHint} (${store.staff.length})',
+        icon: Icons.groups_outlined,
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LowStockScreen()),
+            MaterialPageRoute(builder: (_) => const StaffListScreen()),
+          );
+        },
+      ),
+      _MoreItem(
+        title: t.accessLevels,
+        subtitle: t.accessLevelsHint,
+        icon: Icons.admin_panel_settings_outlined,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const StaffListScreen(focusAccess: true),
+            ),
           );
         },
       ),
@@ -75,7 +90,7 @@ class MoreScreen extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: TapHint(
               number: 1,
-              text: 'Tap a row: Report / Expense / Low stock / Settings',
+              text: 'Profile, staff, access levels, and settings',
             ),
           ),
           ...items.map(
