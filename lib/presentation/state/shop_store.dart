@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../domain/analytics/report_insights.dart';
+import '../../domain/entities/cart.dart';
+import '../../domain/entities/discount.dart';
 import '../../domain/entities/customer.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
@@ -41,6 +43,9 @@ class ShopStore extends ChangeNotifier {
   List<SaleRecord> trendSales = [];
   List<DateTime> saleDays = [];
 
+  /// In-memory held bills (frontend demo — not persisted).
+  List<ParkedBill> parkedBills = [];
+
   DateTime reportStart = DateTime.now();
   DateTime reportEnd = DateTime.now();
   ReportPreset reportPreset = ReportPreset.today;
@@ -62,12 +67,47 @@ class ShopStore extends ChangeNotifier {
   int get lowStockThreshold => shop?.lowStockThreshold ?? 5;
 
   List<Product> get lowStockProducts =>
-      products.where((p) => p.stock <= lowStockThreshold).toList()
-        ..sort((a, b) => a.stock.compareTo(b.stock));
+      products
+          .where(
+            (p) =>
+                p.storeStock <= lowStockThreshold ||
+                p.warehouseStock <= lowStockThreshold,
+          )
+          .toList()
+        ..sort((a, b) => a.totalStock.compareTo(b.totalStock));
+
+  List<Product> get expiredProducts =>
+      products.where((p) => p.isExpired).toList()
+        ..sort((a, b) => a.expiryDay!.compareTo(b.expiryDay!));
+
+  List<Product> get expiringSoonProducts => products
+      .where(
+        (p) => p.isExpiringSoon(withinDays: AppConstants.expiryWarningDays),
+      )
+      .toList()
+    ..sort((a, b) => a.expiryDay!.compareTo(b.expiryDay!));
+
+  /// Expired + expiring soon, expired first.
+  List<Product> get expiryAlertProducts {
+    final list = [...expiredProducts, ...expiringSoonProducts];
+    return list;
+  }
 
   double get todaySalesTotal => todaySales.fold(0, (sum, s) => sum + s.total);
   double get todayProfit => todaySales.fold(0, (sum, s) => sum + s.profit);
   int get todayPieces => todaySales.fold(0, (sum, s) => sum + s.qty);
+
+  List<SaleRecord> get todayReturnSales =>
+      todaySales.where((s) => s.paymentType == 'return').toList();
+
+  int get todayReturnCount => todayReturnSales.length;
+
+  /// Positive ৳ amount refunded today (returns are stored as negative totals).
+  double get todayReturnAmount =>
+      todayReturnSales.fold(0.0, (sum, s) => sum + s.total.abs());
+
+  int get todayReturnPieces =>
+      todayReturnSales.fold(0, (sum, s) => sum + s.qty);
   double get totalDue => dueCustomers.fold(0, (sum, c) => sum + c.dueAmount);
   double get reportSalesTotal =>
       reportSales.fold(0, (sum, s) => sum + s.total);
@@ -105,9 +145,16 @@ class ShopStore extends ChangeNotifier {
         .fold(0, (sum, e) => sum + e.amount);
   }
 
-  int get totalStockQty => products.fold(0, (sum, p) => sum + p.stock);
+  int get totalStockQty => products.fold(0, (sum, p) => sum + p.totalStock);
+  int get totalStoreQty => products.fold(0, (sum, p) => sum + p.storeStock);
+  int get totalWarehouseQty =>
+      products.fold(0, (sum, p) => sum + p.warehouseStock);
   double get stockCostValue =>
-      products.fold(0, (sum, p) => sum + (p.costPrice * p.stock));
+      products.fold(0, (sum, p) => sum + (p.costPrice * p.totalStock));
+  double get storeCostValue =>
+      products.fold(0, (sum, p) => sum + (p.costPrice * p.storeStock));
+  double get warehouseCostValue =>
+      products.fold(0, (sum, p) => sum + (p.costPrice * p.warehouseStock));
   double get todayExpenseTotal {
     final now = DateTime.now();
     return expenses
@@ -286,10 +333,106 @@ class ShopStore extends ChangeNotifier {
     return null;
   }
 
+  Future<String?> updateProductOffer({
+    required Product product,
+    required DiscountType discountType,
+    required double discountValue,
+  }) async {
+    final live = _productById(product.id) ?? findProductByCode(product.code);
+    if (live == null) {
+      return languageCode == 'bn' ? 'পণ্য পাওয়া যায়নি' : 'Product not found';
+    }
+    final value = discountType == DiscountType.none
+        ? 0.0
+        : (discountValue < 0 ? 0.0 : discountValue);
+    if (discountType == DiscountType.percent && value > 100) {
+      return languageCode == 'bn'
+          ? 'শতাংশ ১০০-এর বেশি হতে পারে না'
+          : 'Percent cannot be over 100';
+    }
+    await _repo.updateProduct(
+      live.copyWith(
+        discountType: discountType,
+        discountValue: value,
+      ),
+    );
+    await refreshAll();
+    return null;
+  }
+
+  /// Move qty from warehouse (Stock) into shop (Store).
+  Future<String?> transferWarehouseToStore({
+    required Product product,
+    required int qty,
+  }) async {
+    if (qty <= 0) {
+      return languageCode == 'bn' ? 'পরিমাণ ঠিক নয়' : 'Invalid quantity';
+    }
+    final live = _productById(product.id) ?? findProductByCode(product.code);
+    if (live == null) {
+      return languageCode == 'bn' ? 'পণ্য পাওয়া যায়নি' : 'Product not found';
+    }
+    if (qty > live.warehouseStock) {
+      return languageCode == 'bn'
+          ? 'ওয়্যারহাউসে যথেষ্ট নেই'
+          : 'Not enough warehouse stock';
+    }
+    await _repo.updateProduct(
+      live.copyWith(
+        warehouseStock: live.warehouseStock - qty,
+        storeStock: live.storeStock + qty,
+      ),
+    );
+    await refreshAll();
+    return null;
+  }
+
+  /// Move qty from shop (Store) back to warehouse (Stock).
+  Future<String?> transferStoreToWarehouse({
+    required Product product,
+    required int qty,
+  }) async {
+    if (qty <= 0) {
+      return languageCode == 'bn' ? 'পরিমাণ ঠিক নয়' : 'Invalid quantity';
+    }
+    final live = _productById(product.id) ?? findProductByCode(product.code);
+    if (live == null) {
+      return languageCode == 'bn' ? 'পণ্য পাওয়া যায়নি' : 'Product not found';
+    }
+    if (qty > live.storeStock) {
+      return languageCode == 'bn'
+          ? 'স্টোরে যথেষ্ট নেই'
+          : 'Not enough store stock';
+    }
+    await _repo.updateProduct(
+      live.copyWith(
+        storeStock: live.storeStock - qty,
+        warehouseStock: live.warehouseStock + qty,
+      ),
+    );
+    await refreshAll();
+    return null;
+  }
+
   Product? findProductByCode(String code) {
     final normalized = code.trim().toUpperCase();
     for (final product in products) {
       if (product.code.toUpperCase() == normalized) return product;
+    }
+    return null;
+  }
+
+  Product? _productById(int? id) {
+    if (id == null) return null;
+    for (final product in products) {
+      if (product.id == id) return product;
+    }
+    return null;
+  }
+
+  ParkedBill? _parkedById(String id) {
+    for (final bill in parkedBills) {
+      if (bill.id == id) return bill;
     }
     return null;
   }
@@ -301,14 +444,16 @@ class ShopStore extends ChangeNotifier {
     required String paymentType,
     String? customerName,
     String? customerPhone,
+    String? salesmanName,
+    String? salesmanId,
   }) async {
     if (qty <= 0) {
       return languageCode == 'bn' ? 'পরিমাণ ঠিক নয়' : 'Invalid quantity';
     }
-    if (qty > product.stock) {
+    if (qty > product.storeStock) {
       return languageCode == 'bn'
-          ? 'স্টকে যথেষ্ট পণ্য নেই'
-          : 'Not enough stock';
+          ? 'স্টোরে যথেষ্ট পণ্য নেই'
+          : 'Not enough store stock';
     }
     if (unitPrice < product.costPrice) {
       return languageCode == 'bn'
@@ -349,10 +494,14 @@ class ShopStore extends ChangeNotifier {
       paymentType: paymentType,
       customerId: customer?.id,
       customerName: customer?.name,
+      salesmanName: _optionalText(salesmanName),
+      salesmanId: _optionalText(salesmanId),
     );
 
     await _repo.insertSale(sale);
-    await _repo.updateProduct(product.copyWith(stock: product.stock - qty));
+    await _repo.updateProduct(
+      product.copyWith(storeStock: product.storeStock - qty),
+    );
 
     if (paymentType == 'due' && customer != null) {
       await _repo.updateCustomer(
@@ -360,6 +509,205 @@ class ShopStore extends ChangeNotifier {
       );
     }
 
+    await refreshAll();
+    return null;
+  }
+
+  Future<String?> completeCartSale({
+    required List<CartLine> lines,
+    required String paymentType,
+    BillDiscount discount = const BillDiscount(),
+    String? customerName,
+    String? customerPhone,
+    String? salesmanName,
+    String? salesmanId,
+  }) async {
+    if (lines.isEmpty) {
+      return languageCode == 'bn' ? 'কার্ট খালি' : 'Cart is empty';
+    }
+
+    // Refresh product snapshots from current stock.
+    final resolved = <CartLine>[];
+    for (final line in lines) {
+      final live = _productById(line.product.id) ??
+          findProductByCode(line.product.code);
+      if (live == null) {
+        return languageCode == 'bn'
+            ? 'পণ্য পাওয়া যায়নি: ${line.product.code}'
+            : 'Product not found: ${line.product.code}';
+      }
+      if (line.qty <= 0) {
+        return languageCode == 'bn' ? 'পরিমাণ ঠিক নয়' : 'Invalid quantity';
+      }
+      final need = line.isWeight
+          ? (line.qty.ceil() < 1 ? 1 : line.qty.ceil())
+          : line.qty.round();
+      if (need > live.storeStock) {
+        return languageCode == 'bn'
+            ? 'স্টোরে যথেষ্ট নেই: ${live.name}'
+            : 'Not enough store stock: ${live.name}';
+      }
+      if (line.unitPrice < live.costPrice) {
+        return languageCode == 'bn'
+            ? 'ক্রয় দামের নিচে দাম দেওয়া যাবে না'
+            : 'Price cannot be below cost';
+      }
+      resolved.add(
+        CartLine(
+          product: live,
+          qty: line.qty,
+          unitPrice: line.unitPrice,
+          isWeight: line.isWeight,
+          discountType: line.discountType,
+          discountValue: line.discountValue,
+        ),
+      );
+    }
+
+    // Line nets already include item % / ৳ offers; bill discount scales on top.
+    final subtotal = resolved.fold<double>(0, (s, l) => s + l.lineTotal);
+    final discountAmt = discount.amountFor(subtotal);
+    final payable = (subtotal - discountAmt).clamp(0, double.infinity);
+    final scale = subtotal <= 0 ? 1.0 : payable / subtotal;
+
+    Customer? customer;
+    if (paymentType == 'due') {
+      final name = customerName?.trim() ?? '';
+      final phone = customerPhone?.trim() ?? '';
+      if (name.isEmpty || phone.isEmpty) {
+        return languageCode == 'bn'
+            ? 'বাকি বিক্রির জন্য নাম ও ফোন দিন'
+            : 'Name and phone required for due sale';
+      }
+      customer = await _repo.getCustomerByPhone(phone);
+      if (customer == null) {
+        final id = await _repo.insertCustomer(
+          Customer(name: name, phone: phone, dueAmount: 0),
+        );
+        customer = Customer(id: id, name: name, phone: phone, dueAmount: 0);
+      }
+    }
+
+    final salesmanN = _optionalText(salesmanName);
+    final salesmanI = _optionalText(salesmanId);
+
+    for (final line in resolved) {
+      final live = line.product;
+      final stockQty = line.stockToDeduct;
+      final lineTotal = line.lineTotal * scale;
+      final recordQty = line.isWeight ? stockQty : line.qty.round();
+      final unitPrice = recordQty <= 0 ? lineTotal : lineTotal / recordQty;
+      final costForLine = live.costPrice * recordQty;
+      final profit = lineTotal - costForLine;
+
+      await _repo.insertSale(
+        SaleRecord(
+          productId: live.id!,
+          productCode: live.code,
+          productName: live.name,
+          qty: recordQty,
+          unitPrice: unitPrice,
+          costPrice: live.costPrice,
+          total: lineTotal,
+          profit: profit,
+          soldAt: DateTime.now(),
+          paymentType: paymentType,
+          customerId: customer?.id,
+          customerName: customer?.name,
+          salesmanName: salesmanN,
+          salesmanId: salesmanI,
+        ),
+      );
+      await _repo.updateProduct(
+        live.copyWith(storeStock: live.storeStock - stockQty),
+      );
+    }
+
+    if (paymentType == 'due' && customer != null && payable > 0) {
+      await _repo.updateCustomer(
+        customer.copyWith(dueAmount: customer.dueAmount + payable),
+      );
+    }
+
+    await refreshAll();
+    return null;
+  }
+
+  void parkBill({
+    required List<CartLine> lines,
+    required BillDiscount discount,
+    String? label,
+  }) {
+    if (lines.isEmpty) return;
+    parkedBills = [
+      ParkedBill(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        label: (label == null || label.trim().isEmpty)
+            ? 'Bill ${parkedBills.length + 1}'
+            : label.trim(),
+        lines: [
+          for (final l in lines)
+            CartLine(
+              product: l.product,
+              qty: l.qty,
+              unitPrice: l.unitPrice,
+              isWeight: l.isWeight,
+              discountType: l.discountType,
+              discountValue: l.discountValue,
+            ),
+        ],
+        discount: discount,
+        parkedAt: DateTime.now(),
+      ),
+      ...parkedBills,
+    ];
+    notifyListeners();
+  }
+
+  ParkedBill? takeParkedBill(String id) {
+    final match = _parkedById(id);
+    if (match == null) return null;
+    parkedBills = parkedBills.where((b) => b.id != id).toList();
+    notifyListeners();
+    return match;
+  }
+
+  void discardParkedBill(String id) {
+    parkedBills = parkedBills.where((b) => b.id != id).toList();
+    notifyListeners();
+  }
+
+  Future<String?> returnToStock({
+    required Product product,
+    required int qty,
+  }) async {
+    if (qty <= 0) {
+      return languageCode == 'bn' ? 'পরিমাণ ঠিক নয়' : 'Invalid quantity';
+    }
+    final live =
+        _productById(product.id) ?? findProductByCode(product.code);
+    if (live == null) {
+      return languageCode == 'bn' ? 'পণ্য পাওয়া যায়নি' : 'Product not found';
+    }
+
+    final refundTotal = live.sellPrice * qty;
+    await _repo.insertSale(
+      SaleRecord(
+        productId: live.id!,
+        productCode: live.code,
+        productName: live.name,
+        qty: qty,
+        unitPrice: live.sellPrice,
+        costPrice: live.costPrice,
+        total: -refundTotal,
+        profit: -(live.sellPrice - live.costPrice) * qty,
+        soldAt: DateTime.now(),
+        paymentType: 'return',
+      ),
+    );
+    await _repo.updateProduct(
+      live.copyWith(storeStock: live.storeStock + qty),
+    );
     await refreshAll();
     return null;
   }
@@ -497,5 +845,10 @@ class ShopStore extends ChangeNotifier {
           p.name.toLowerCase().contains(q) ||
           p.variant.toLowerCase().contains(q);
     }).toList();
+  }
+
+  String? _optionalText(String? value) {
+    final t = value?.trim() ?? '';
+    return t.isEmpty ? null : t;
   }
 }

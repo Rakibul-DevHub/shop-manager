@@ -2,6 +2,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../../domain/entities/customer.dart';
+import '../../domain/entities/discount.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/sale.dart';
@@ -26,11 +27,15 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 7,
       onCreate: (db, version) async {
         await _createV1(db);
         await _createSettings(db);
         await _createStaff(db);
+        await _ensureProductExpiryColumn(db);
+        await _ensureProductDiscountColumns(db);
+        await _ensureSaleSalesmanColumns(db);
+        await _ensureProductStoreStockColumn(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -39,8 +44,70 @@ class AppDatabase {
         if (oldVersion < 3) {
           await _createStaff(db);
         }
+        if (oldVersion < 4) {
+          await _ensureProductExpiryColumn(db);
+        }
+        if (oldVersion < 5) {
+          await _ensureProductDiscountColumns(db);
+        }
+        if (oldVersion < 6) {
+          await _ensureSaleSalesmanColumns(db);
+        }
+        if (oldVersion < 7) {
+          await _ensureProductStoreStockColumn(db);
+        }
       },
     );
+  }
+
+  Future<void> _ensureProductExpiryColumn(Database db) async {
+    final info = await db.rawQuery('PRAGMA table_info(products)');
+    final hasExpiry = info.any((row) => row['name'] == 'expiry_date');
+    if (!hasExpiry) {
+      await db.execute('ALTER TABLE products ADD COLUMN expiry_date TEXT');
+    }
+  }
+
+  Future<void> _ensureProductDiscountColumns(Database db) async {
+    final info = await db.rawQuery('PRAGMA table_info(products)');
+    final names = info.map((row) => row['name'] as String).toSet();
+    if (!names.contains('discount_type')) {
+      await db.execute(
+        "ALTER TABLE products ADD COLUMN discount_type TEXT NOT NULL DEFAULT 'none'",
+      );
+    }
+    if (!names.contains('discount_value')) {
+      await db.execute(
+        'ALTER TABLE products ADD COLUMN discount_value REAL NOT NULL DEFAULT 0',
+      );
+    }
+  }
+
+  Future<void> _ensureSaleSalesmanColumns(Database db) async {
+    final info = await db.rawQuery('PRAGMA table_info(sales)');
+    final names = info.map((row) => row['name'] as String).toSet();
+    if (!names.contains('salesman_name')) {
+      await db.execute('ALTER TABLE sales ADD COLUMN salesman_name TEXT');
+    }
+    if (!names.contains('salesman_id')) {
+      await db.execute('ALTER TABLE sales ADD COLUMN salesman_id TEXT');
+    }
+  }
+
+  /// Adds shop qty. Existing `stock` remains warehouse.
+  /// Migration: move previous qty into shop so selling still works; warehouse starts empty.
+  Future<void> _ensureProductStoreStockColumn(Database db) async {
+    final info = await db.rawQuery('PRAGMA table_info(products)');
+    final names = info.map((row) => row['name'] as String).toSet();
+    if (!names.contains('store_stock')) {
+      await db.execute(
+        'ALTER TABLE products ADD COLUMN store_stock INTEGER NOT NULL DEFAULT 0',
+      );
+      // Old single `stock` was sellable inventory → treat as shop (store).
+      // Warehouse (`stock`) is cleared so totals stay the same.
+      await db.execute('UPDATE products SET store_stock = stock');
+      await db.execute('UPDATE products SET stock = 0');
+    }
   }
 
   Future<void> _createSettings(Database db) async {
@@ -98,7 +165,11 @@ class AppDatabase {
             variant TEXT NOT NULL,
             cost_price REAL NOT NULL,
             sell_price REAL NOT NULL,
-            stock INTEGER NOT NULL
+            stock INTEGER NOT NULL,
+            store_stock INTEGER NOT NULL DEFAULT 0,
+            expiry_date TEXT,
+            discount_type TEXT NOT NULL DEFAULT 'none',
+            discount_value REAL NOT NULL DEFAULT 0
           )
         ''');
         await db.execute('''
@@ -123,7 +194,9 @@ class AppDatabase {
             sold_at TEXT NOT NULL,
             payment_type TEXT NOT NULL,
             customer_id INTEGER,
-            customer_name TEXT
+            customer_name TEXT,
+            salesman_name TEXT,
+            salesman_id TEXT
           )
         ''');
         await db.execute('''
@@ -272,9 +345,9 @@ class AppDatabase {
     final db = await database;
     final rows = await db.query(
       'products',
-      where: 'stock <= ?',
-      whereArgs: [threshold],
-      orderBy: 'stock ASC',
+      where: 'stock <= ? OR store_stock <= ?',
+      whereArgs: [threshold, threshold],
+      orderBy: '(stock + store_stock) ASC',
     );
     return rows.map(Product.fromMap).toList();
   }
@@ -427,7 +500,10 @@ class AppDatabase {
         variant: 'L',
         costPrice: 320,
         sellPrice: 450,
-        stock: 12,
+        warehouseStock: 20,
+        storeStock: 12,
+        discountType: DiscountType.percent,
+        discountValue: 10,
       ),
       const Product(
         code: 'CH05',
@@ -435,15 +511,28 @@ class AppDatabase {
         variant: 'Type-C',
         costPrice: 230,
         sellPrice: 320,
-        stock: 3,
+        warehouseStock: 10,
+        storeStock: 3,
       ),
-      const Product(
+      Product(
         code: 'RC010',
         name: 'চাল',
         variant: '5kg',
         costPrice: 340,
         sellPrice: 390,
-        stock: 8,
+        warehouseStock: 30,
+        storeStock: 8,
+        expiryDate: DateTime.now().add(const Duration(days: 20)),
+      ),
+      Product(
+        code: 'ML001',
+        name: 'দুধ',
+        variant: '1L',
+        costPrice: 70,
+        sellPrice: 85,
+        warehouseStock: 40,
+        storeStock: 15,
+        expiryDate: DateTime.now().add(const Duration(days: 5)),
       ),
     ];
     for (final product in demo) {

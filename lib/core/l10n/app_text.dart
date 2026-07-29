@@ -62,6 +62,12 @@ class AppText {
   String get stockValue => isBn ? 'স্টকের মূল্য' : 'Stock value';
   String get stockItems => isBn ? 'মোট স্টক' : 'Total stock';
   String get todayExpense => isBn ? 'আজকের খরচ' : "Today's expense";
+  String get todayReturns => isBn ? 'আজকের রিটার্ন' : "Today's returns";
+  String get todayReturnsHint =>
+      isBn ? 'রিটার্ন সংখ্যা ও টাকা' : 'Return count and amount';
+  String get returnsListTitle => isBn ? 'রিটার্ন তালিকা' : 'Returns';
+  String get noReturns => isBn ? 'কোনো রিটার্ন নেই' : 'No returns';
+  String get returnAmount => isBn ? 'রিটার্ন টাকা' : 'Return amount';
   String get itemsUnit => isBn ? 'পিস' : 'pcs';
   String get viewReport => isBn ? 'রিপোর্ট দেখুন' : 'View report';
   String get saleHistory => isBn ? 'বিক্রির ইতিহাস' : 'Sale history';
@@ -110,15 +116,74 @@ class AppText {
   String get ok => isBn ? 'ঠিক আছে' : 'OK';
   String get productNotFound =>
       isBn ? 'পণ্য পাওয়া যায়নি' : 'Product not found';
+  String get addToCart => isBn ? 'কার্টে যোগ' : 'Add to cart';
+  String get cart => isBn ? 'কার্ট' : 'Cart';
+  String get cartEmpty => isBn ? 'কার্ট খালি' : 'Cart is empty';
+  String get checkout => isBn ? 'চেকআউট' : 'Checkout';
+  String get remove => isBn ? 'সরান' : 'Remove';
+  String get holdBill => isBn ? 'বিল হোল্ড' : 'Hold bill';
+  String get heldBills => isBn ? 'হোল্ড করা বিল' : 'Held bills';
+  String get resumeBill => isBn ? 'আবার নিন' : 'Resume';
+  String get discardBill => isBn ? 'ফেলে দিন' : 'Discard';
+  String get noHeldBills => isBn ? 'কোনো হোল্ড বিল নেই' : 'No held bills';
+  String get billHeld => isBn ? 'বিল হোল্ড হয়েছে' : 'Bill held';
+  String get discount => isBn ? 'ছাড়' : 'Discount';
+  String get discountNone => isBn ? 'ছাড় নেই' : 'No discount';
+  String get discountPercent => isBn ? 'শতাংশ %' : 'Percent %';
+  String get discountAmount => isBn ? 'টাকায়' : 'Amount ৳';
+  String get discountReason => isBn ? 'ছাড়ের কারণ' : 'Discount reason';
+  String get itemDiscount => isBn ? 'আইটেম ছাড়' : 'Item offer';
+  String get billDiscount => isBn ? 'বিল ছাড়' : 'Bill discount';
+  String get productDiscount => isBn ? 'পণ্যের ছাড়' : 'Product offer';
+  String get productDiscountHint => isBn
+      ? 'দোকান/স্টোরের সাধারণ ছাড় (বিক্রির সময় আগে থেকে আসবে)'
+      : 'Common shop offer (pre-fills at sell)';
+  String get youSave => isBn ? 'ছাড়' : 'You save';
+  String get afterDiscount => isBn ? 'ছাড়ের পর' : 'After discount';
+  String get subtotal => isBn ? 'সাবটোটাল' : 'Subtotal';
+  String get payable => isBn ? 'পরিশোধযোগ্য' : 'Payable';
+  String get sellMode => isBn ? 'বিক্রি' : 'Sell';
+  String get returnMode => isBn ? 'রিটার্ন' : 'Return';
+  String get returnStock => isBn ? 'স্টকে ফেরত' : 'Return to stock';
+  String get returnDone => isBn ? 'রিটার্ন সম্পন্ন' : 'Return completed';
+  String get weightMode => isBn ? 'ওজন (কেজি)' : 'Weight (kg)';
+  String get pieceMode => isBn ? 'পিস' : 'Pieces';
+  String get weightQty => isBn ? 'ওজন (কেজি)' : 'Weight (kg)';
+  String get invalidWeight => isBn ? 'সঠিক ওজন দিন' : 'Enter a valid weight';
+  String get cartAdded => isBn ? 'কার্টে যোগ হয়েছে' : 'Added to cart';
 
-  String get productsTitle => isBn ? 'পণ্য / স্টক' : 'Products / Stock';
+  String get productsTitle => isBn ? 'স্টোর / স্টক' : 'Store / Stock';
+  String get storeTab => isBn ? 'স্টোর (দোকান)' : 'Store (shop)';
+  String get stockTab => isBn ? 'স্টক (ওয়্যারহাউস)' : 'Stock (warehouse)';
+  String get storeHint => isBn
+      ? 'দোকানের পণ্য — অফার সেট করুন, স্টোর পরিমাণ দেখুন'
+      : 'Shop floor — set offers and see store qty';
+  String get stockHint => isBn
+      ? 'মূল ওয়্যারহাউস — পণ্য যোগ ও স্টোরে পাঠান'
+      : 'Main warehouse — add products and send to store';
+  String get setProductOffer =>
+      isBn ? 'অফার সেট করুন' : 'Set product offer';
+  String get saveOffer => isBn ? 'অফার সেভ' : 'Save offer';
+  String get offerSaved => isBn ? 'অফার সেভ হয়েছে' : 'Offer saved';
   String get searchProducts =>
       isBn ? 'কোড বা নাম লিখুন' : 'Search by code or name';
   String get addProduct =>
       isBn ? 'নতুন পণ্য যোগ করুন' : 'Add new product';
   String get stock => isBn ? 'স্টক' : 'Stock';
+  String get storeQty => isBn ? 'স্টোর পরিমাণ' : 'Store qty';
+  String get warehouseQty => isBn ? 'ওয়্যারহাউস পরিমাণ' : 'Warehouse qty';
+  String get totalQty => isBn ? 'মোট পরিমাণ' : 'Total qty';
+  String get sendToStore => isBn ? 'স্টোরে পাঠান' : 'Send to store';
+  String get returnToWarehouse =>
+      isBn ? 'ওয়্যারহাউসে ফেরত' : 'Back to warehouse';
+  String get transferQty => isBn ? 'পাঠানোর পরিমাণ' : 'Transfer qty';
+  String get transferDone => isBn ? 'ট্রান্সফার হয়েছে' : 'Transfer done';
   String get cost => isBn ? 'ক্রয়' : 'Cost';
   String get sellPrice => isBn ? 'বিক্রি' : 'Sell';
+  String get noOffer => isBn ? 'কোনো অফার নেই' : 'No offer';
+  String get editOffer => isBn ? 'অফার এডিট' : 'Edit offer';
+  String get notEnoughStore =>
+      isBn ? 'স্টোরে যথেষ্ট নেই' : 'Not enough store stock';
 
   String get addProductTitle => isBn ? 'নতুন পণ্য যোগ' : 'Add product';
   String get productName => isBn ? 'পণ্যের নাম' : 'Product name';
@@ -128,6 +193,32 @@ class AppText {
   String get sellPriceField => isBn ? 'বিক্রি দাম' : 'Sell price';
   String get stockCount => isBn ? 'স্টক সংখ্যা' : 'Stock count';
   String get saveProduct => isBn ? 'পণ্য সেভ করুন' : 'Save product';
+  String get expiryDate => isBn ? 'মেয়াদ উত্তীর্ণের তারিখ' : 'Expiry date';
+  String get expiryDateOptional =>
+      isBn ? 'ঐচ্ছিক (খাবার ইত্যাদি)' : 'Optional (food / perishable)';
+  String get expiryDateHint => isBn
+      ? 'শুধু খাবার বা মেয়াদযুক্ত পণ্যের জন্য'
+      : 'Only for food or dated products';
+  String get setExpiryDate => isBn ? 'মেয়াদ তারিখ দিন' : 'Set expiry date';
+  String get clearExpiryDate => isBn ? 'মেয়াদ সরান' : 'Clear expiry';
+  String get noExpiry => isBn ? 'মেয়াদ নেই' : 'No expiry';
+  String get expired => isBn ? 'মেয়াদ শেষ' : 'Expired';
+  String get expiringSoon => isBn ? 'শীঘ্রই শেষ' : 'Expiring soon';
+  String get expiresOn => isBn ? 'মেয়াদ' : 'Expires';
+  String get expiryAlerts => isBn ? 'মেয়াদ সতর্কতা' : 'Expiry alerts';
+  String get expiryAlertsHint => isBn
+      ? 'মেয়াদ শেষ বা শীঘ্রই শেষ হওয়া পণ্য'
+      : 'Expired or soon-to-expire products';
+  String get noExpiryAlerts =>
+      isBn ? 'মেয়াদ সতর্কতার পণ্য নেই' : 'No expiry alerts';
+  String get daysLeft => isBn ? 'দিন বাকি' : 'days left';
+  String get expiredAgo => isBn ? 'দিন আগে শেষ' : 'days overdue';
+  String get sellExpiredWarning => isBn
+      ? 'সতর্কতা: এই পণ্যের মেয়াদ শেষ হয়ে গেছে'
+      : 'Warning: this product is past expiry';
+  String get sellExpiringWarning => isBn
+      ? 'সতর্কতা: মেয়াদ শীঘ্রই শেষ হচ্ছে'
+      : 'Warning: this product expires soon';
 
   String get dueBook => isBn ? 'বাকি খাতা' : 'Due book';
   String get dueBookHint =>
@@ -184,11 +275,22 @@ class AppText {
   String get thinMarginWatch =>
       isBn ? 'কম মার্জিন সতর্কতা' : 'Thin margin watch';
   String get thinMarginHint => isBn
-      ? '১০%-এর নিচে, শূন্য বা লসের বিক্রি'
-      : 'Sold under 10% margin, zero, or at a loss';
+      ? '১০%-এর নিচে, শূন্য বা লসের বিক্রি — ট্যাপ করে তালিকা দেখুন'
+      : 'Sold under 10% margin, zero, or at a loss — tap to view list';
+  String get thinMarginListTitle =>
+      isBn ? 'কম মার্জিনের পণ্য' : 'Thin-margin products';
+  String get thinMarginSaleCount => isBn ? 'বিক্রি' : 'sales';
+  String get saleDetails => isBn ? 'বিক্রির বিবরণ' : 'Sale details';
+  String get tapForDetails =>
+      isBn ? 'বিস্তারিত দেখতে ট্যাপ করুন' : 'Tap to expand details';
   String get noThinMargin =>
       isBn ? 'কম মার্জিনের বিক্রি নেই' : 'No thin-margin sales';
   String get marginLabel => isBn ? 'মার্জিন' : 'Margin';
+  String get salesmanOptional =>
+      isBn ? 'সেলসম্যান (ঐচ্ছিক)' : 'Salesman (optional)';
+  String get salesmanName => isBn ? 'সেলসম্যান নাম' : 'Salesman name';
+  String get salesmanId => isBn ? 'সেলসম্যান আইডি' : 'Salesman ID';
+  String get salesmanLabel => isBn ? 'সেলসম্যান' : 'Salesman';
 
   String get topByProfit => isBn ? 'সবচেয়ে লাভজনক' : 'Top by profit';
   String get topByProfitHint =>

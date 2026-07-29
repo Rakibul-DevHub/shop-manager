@@ -10,6 +10,7 @@ import '../state/shop_store.dart';
 import 'daily_report_screen.dart';
 import 'due_customers_screen.dart';
 import 'expense_screen.dart';
+import 'expiring_products_screen.dart';
 import 'low_stock_screen.dart';
 import 'products_screen.dart';
 import 'quick_sell_screen.dart';
@@ -26,227 +27,280 @@ class HomeScreen extends StatelessWidget {
     final shopName = store.shop?.name ?? 'Shop Manager';
 
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      shopName,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        shopName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      t.shopSummary,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
+                      const SizedBox(height: 4),
+                      Text(
+                        t.shopSummary,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              OfflineBadge(label: t.offline),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const TapHint(
-            number: 1,
-            text: 'Tap Quick Sell to open the rear camera scanner',
-          ),
-          Material(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const QuickSellScreen(
-                      standalone: true,
-                      openScannerOnStart: true,
-                    ),
+                    ],
                   ),
-                );
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 22,
                 ),
-                child: Row(
-                  children: [
-                    const TapMark(1, tooltip: 'Tap here → Quick Sell'),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(12),
+                OfflineBadge(label: t.offline),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+              children: [
+                const TapHint(
+                  number: 1,
+                  text: 'Tap Quick Sell to open the rear camera scanner',
+                ),
+                Material(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const QuickSellScreen(
+                            standalone: true,
+                            openScannerOnStart: true,
+                          ),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 22,
                       ),
-                      child: const Icon(Icons.flash_on, color: Colors.white),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            t.quickSell,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
+                          const TapMark(1, tooltip: 'Tap here → Quick Sell'),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child:
+                                const Icon(Icons.flash_on, color: Colors.white),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.quickSell,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  t.quickSellHint,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            t.quickSellHint,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 13,
-                            ),
-                          ),
+                          const Icon(Icons.chevron_right, color: Colors.white),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: Colors.white),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  t.todaySummary,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const DailyReportScreen(),
-                    ),
-                  );
-                },
-                child: Text(t.viewReport),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const TapHint(
-            number: 2,
-            text: 'Tap a summary card for history, stock, dues, or expense',
-          ),
-          const SizedBox(height: 8),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.45,
-            children: [
-              _SummaryCard(
-                icon: Icons.point_of_sale_outlined,
-                label: t.todaySales,
-                value: formatTaka(store.todaySalesTotal),
-                hint: '${store.todayPieces} ${t.itemsUnit}',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SaleHistoryScreen(),
-                    ),
-                  );
-                },
-              ),
-              _SummaryCard(
-                icon: Icons.trending_up,
-                label: t.profit,
-                value: formatTaka(store.todayProfit),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const DailyReportScreen(),
-                    ),
-                  );
-                },
-              ),
-              _SummaryCard(
-                icon: Icons.inventory_2_outlined,
-                label: t.stockItems,
-                value: '${store.totalStockQty} ${t.itemsUnit}',
-                hint: '${t.stockValue}: ${formatTaka(store.stockCostValue)}',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => Scaffold(
-                        appBar: AppBar(),
-                        body: const ProductsScreen(),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        t.todaySummary,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  );
-                },
-              ),
-              _SummaryCard(
-                icon: Icons.warning_amber_rounded,
-                label: t.lowStock,
-                value: '${store.lowStockProducts.length}',
-                tint: store.lowStockProducts.isEmpty
-                    ? AppColors.primaryLight
-                    : const Color(0xFFFFF1E8),
-                iconColor: store.lowStockProducts.isEmpty
-                    ? AppColors.primary
-                    : AppColors.accent,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const LowStockScreen(),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const DailyReportScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(t.viewReport),
                     ),
-                  );
-                },
-              ),
-              _SummaryCard(
-                icon: Icons.account_balance_wallet_outlined,
-                label: t.due,
-                value: formatTaka(store.totalDue),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => Scaffold(
-                        appBar: AppBar(),
-                        body: const DueCustomersScreen(),
-                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const TapHint(
+                  number: 2,
+                  text:
+                      'Tap a summary card for history, stock, dues, or expense',
+                ),
+                const SizedBox(height: 8),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 1.45,
+                  children: [
+                    _SummaryCard(
+                      icon: Icons.point_of_sale_outlined,
+                      label: t.todaySales,
+                      value: formatTaka(store.todaySalesTotal),
+                      hint: '${store.todayPieces} ${t.itemsUnit}',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SaleHistoryScreen(),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-              _SummaryCard(
-                icon: Icons.receipt_long_outlined,
-                label: t.todayExpense,
-                value: formatTaka(store.todayExpenseTotal),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ExpenseScreen()),
-                  );
-                },
-              ),
-            ],
+                    _SummaryCard(
+                      icon: Icons.trending_up,
+                      label: t.profit,
+                      value: formatTaka(store.todayProfit),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const DailyReportScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _SummaryCard(
+                      icon: Icons.inventory_2_outlined,
+                      label: t.stockItems,
+                      value: '${store.totalStockQty} ${t.itemsUnit}',
+                      hint:
+                          '${t.storeQty}: ${store.totalStoreQty} • ${t.warehouseQty}: ${store.totalWarehouseQty}',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => Scaffold(
+                              appBar: AppBar(),
+                              body: const ProductsScreen(),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    _SummaryCard(
+                      icon: Icons.warning_amber_rounded,
+                      label: t.lowStock,
+                      value: '${store.lowStockProducts.length}',
+                      tint: store.lowStockProducts.isEmpty
+                          ? AppColors.primaryLight
+                          : const Color(0xFFFFF1E8),
+                      iconColor: store.lowStockProducts.isEmpty
+                          ? AppColors.primary
+                          : AppColors.accent,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const LowStockScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _SummaryCard(
+                      icon: Icons.event_busy_outlined,
+                      label: t.expiryAlerts,
+                      value: '${store.expiryAlertProducts.length}',
+                      tint: store.expiryAlertProducts.isEmpty
+                          ? AppColors.primaryLight
+                          : const Color(0xFFFFEBEE),
+                      iconColor: store.expiryAlertProducts.isEmpty
+                          ? AppColors.primary
+                          : AppColors.danger,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ExpiringProductsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _SummaryCard(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: t.due,
+                      value: formatTaka(store.totalDue),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => Scaffold(
+                              appBar: AppBar(),
+                              body: const DueCustomersScreen(),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    _SummaryCard(
+                      icon: Icons.receipt_long_outlined,
+                      label: t.todayExpense,
+                      value: formatTaka(store.todayExpenseTotal),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ExpenseScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _SummaryCard(
+                      icon: Icons.assignment_return_outlined,
+                      label: t.todayReturns,
+                      value: '${store.todayReturnCount}',
+                      hint: store.todayReturnCount == 0
+                          ? t.todayReturnsHint
+                          : formatTaka(store.todayReturnAmount),
+                      tint: store.todayReturnCount == 0
+                          ? AppColors.primaryLight
+                          : const Color(0xFFFFF8E1),
+                      iconColor: store.todayReturnCount == 0
+                          ? AppColors.primary
+                          : AppColors.accent,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const SaleHistoryScreen(returnsOnly: true),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

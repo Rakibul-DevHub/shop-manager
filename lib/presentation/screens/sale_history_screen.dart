@@ -10,7 +10,13 @@ import '../../domain/entities/sale.dart';
 import '../state/shop_store.dart';
 
 class SaleHistoryScreen extends StatefulWidget {
-  const SaleHistoryScreen({super.key});
+  const SaleHistoryScreen({
+    super.key,
+    this.returnsOnly = false,
+  });
+
+  /// When true, only show return lines for the selected period.
+  final bool returnsOnly;
 
   @override
   State<SaleHistoryScreen> createState() => _SaleHistoryScreenState();
@@ -62,11 +68,19 @@ class _SaleHistoryScreenState extends State<SaleHistoryScreen> {
   Widget build(BuildContext context) {
     final store = context.watch<ShopStore>();
     final t = AppText(store.languageCode);
-    final sales = store.historySales;
+    final sales = widget.returnsOnly
+        ? store.historySales
+            .where((s) => s.paymentType == 'return')
+            .toList()
+        : store.historySales;
+    final total = sales.fold<double>(0, (sum, s) => sum + s.total);
+    final profit = sales.fold<double>(0, (sum, s) => sum + s.profit);
+    final pieces = sales.fold<int>(0, (sum, s) => sum + s.qty);
+    final returnAmount = sales.fold<double>(0, (sum, s) => sum + s.total.abs());
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(t.saleHistory),
+        title: Text(widget.returnsOnly ? t.returnsListTitle : t.saleHistory),
         actions: [
           IconButton(
             tooltip: t.pickDate,
@@ -88,7 +102,7 @@ class _SaleHistoryScreenState extends State<SaleHistoryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    t.saleHistoryHint,
+                    widget.returnsOnly ? t.todayReturnsHint : t.saleHistoryHint,
                     style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 12),
@@ -169,22 +183,27 @@ class _SaleHistoryScreenState extends State<SaleHistoryScreen> {
                     children: [
                       Expanded(
                         child: _Stat(
-                          label: t.total,
-                          value: formatTaka(store.historySalesTotal),
+                          label: widget.returnsOnly ? t.returnAmount : t.total,
+                          value: formatTaka(
+                            widget.returnsOnly ? returnAmount : total,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _Stat(
-                          label: t.profit,
-                          value: formatTaka(store.historyProfit),
+                          label:
+                              widget.returnsOnly ? t.returnMode : t.profit,
+                          value: widget.returnsOnly
+                              ? '${sales.length}'
+                              : formatTaka(profit),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _Stat(
                           label: t.pieces,
-                          value: '${store.historyPieces}',
+                          value: '$pieces',
                         ),
                       ),
                     ],
@@ -198,7 +217,7 @@ class _SaleHistoryScreenState extends State<SaleHistoryScreen> {
               child: sales.isEmpty
                   ? Center(
                       child: Text(
-                        t.noSaleHistory,
+                        widget.returnsOnly ? t.noReturns : t.noSaleHistory,
                         style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     )
@@ -292,7 +311,11 @@ class _HistoryTile extends StatelessWidget {
         : marginPct < 10
             ? AppColors.accent
             : AppColors.success;
-    final payLabel = sale.paymentType == 'due' ? t.dueSale : t.cash;
+    final payLabel = sale.paymentType == 'due'
+        ? t.dueSale
+        : sale.paymentType == 'return'
+            ? t.returnMode
+            : t.cash;
 
     return Card(
       child: ListTile(
@@ -301,9 +324,10 @@ class _HistoryTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         subtitle: Text(
-          '${sale.productCode} • ${t.qty}: ${sale.qty} • $payLabel\n'
+          '${sale.productCode} • ${t.qty}: ${sale.qty} • $payLabel • ${t.marginLabel} ${marginPct.toStringAsFixed(0)}%\n'
           '${DateFormat('dd MMM yyyy, hh:mm a').format(sale.soldAt)}'
-          '${sale.customerName == null || sale.customerName!.isEmpty ? '' : ' • ${sale.customerName}'}',
+          '${sale.customerName == null || sale.customerName!.isEmpty ? '' : ' • ${sale.customerName}'}'
+          '${sale.hasSalesman ? ' • ${t.salesmanLabel}: ${sale.salesmanLabel}' : ''}',
         ),
         isThreeLine: true,
         trailing: Column(

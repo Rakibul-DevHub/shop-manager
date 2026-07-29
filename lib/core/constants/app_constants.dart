@@ -17,5 +17,8 @@ class AppConstants {
     'পরিবহন',
   ];
 
+  /// Days ahead to treat a dated product as “expiring soon”.
+  static const expiryWarningDays = 30;
+
   static const splashDuration = Duration(milliseconds: 1600);
 }

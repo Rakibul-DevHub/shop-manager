@@ -13,6 +13,8 @@ class SaleRecord {
     required this.paymentType,
     this.customerId,
     this.customerName,
+    this.salesmanName,
+    this.salesmanId,
   });
 
   final int? id;
@@ -25,9 +27,30 @@ class SaleRecord {
   final double total;
   final double profit;
   final DateTime soldAt;
-  final String paymentType; // cash | due
+  final String paymentType; // cash | due | return
   final int? customerId;
   final String? customerName;
+
+  /// Optional free-text salesman name / code entered at sell time.
+  final String? salesmanName;
+  final String? salesmanId;
+
+  double get marginPercent =>
+      total <= 0 ? 0.0 : (profit / total) * 100;
+
+  bool get hasSalesman {
+    final name = salesmanName?.trim() ?? '';
+    final sid = salesmanId?.trim() ?? '';
+    return name.isNotEmpty || sid.isNotEmpty;
+  }
+
+  String get salesmanLabel {
+    final name = salesmanName?.trim() ?? '';
+    final sid = salesmanId?.trim() ?? '';
+    if (name.isNotEmpty && sid.isNotEmpty) return '$name ($sid)';
+    if (name.isNotEmpty) return name;
+    return sid;
+  }
 
   Map<String, Object?> toMap() => {
         'id': id,
@@ -43,6 +66,8 @@ class SaleRecord {
         'payment_type': paymentType,
         'customer_id': customerId,
         'customer_name': customerName,
+        'salesman_name': salesmanName,
+        'salesman_id': salesmanId,
       };
 
   factory SaleRecord.fromMap(Map<String, Object?> map) {
@@ -60,6 +85,8 @@ class SaleRecord {
       paymentType: map['payment_type']! as String,
       customerId: map['customer_id'] as int?,
       customerName: map['customer_name'] as String?,
+      salesmanName: map['salesman_name'] as String?,
+      salesmanId: map['salesman_id'] as String?,
     );
   }
 }

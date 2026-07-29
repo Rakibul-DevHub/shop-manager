@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../domain/analytics/report_insights.dart';
+import '../../domain/entities/sale.dart';
 import '../state/shop_store.dart';
 
 class DailyReportScreen extends StatefulWidget {
@@ -57,6 +58,25 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       return fmt.format(store.reportStart);
     }
     return '${fmt.format(store.reportStart)} – ${fmt.format(store.reportEnd)}';
+  }
+
+  void _openThinMarginList(
+    BuildContext context,
+    ReportInsights insights,
+    AppText t,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => _ThinMarginListSheet(
+        sales: insights.thinMarginSales,
+        t: t,
+      ),
+    );
   }
 
   @override
@@ -245,6 +265,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
             _ChartCard(
               title: t.thinMarginWatch,
               subtitle: t.thinMarginHint,
+              onTap: () => _openThinMarginList(context, insights, t),
               child: _ThinMarginSummary(insights: insights, t: t),
             ),
             const SizedBox(height: 24),
@@ -287,15 +308,17 @@ class _ChartCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.child,
+    this.onTap,
   });
 
   final String title;
   final String subtitle;
   final Widget child;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -306,7 +329,21 @@ class _ChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              if (onTap != null)
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                ),
+            ],
+          ),
           const SizedBox(height: 2),
           Text(
             subtitle,
@@ -315,6 +352,15 @@ class _ChartCard extends StatelessWidget {
           const SizedBox(height: 14),
           child,
         ],
+      ),
+    );
+    if (onTap == null) return card;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: card,
       ),
     );
   }
@@ -833,32 +879,269 @@ class _ThinMarginSummary extends StatelessWidget {
     final zeroCount =
         insights.thinMarginSales.where((s) => s.profit == 0).length;
 
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _MiniStatBox(
-            label: t.thinMarginWatch,
-            value: '$count',
-            color: count == 0 ? AppColors.success : AppColors.danger,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _MiniStatBox(
+                label: t.thinMarginWatch,
+                value: '$count',
+                color: count == 0 ? AppColors.success : AppColors.danger,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MiniStatBox(
+                label: t.lossSales,
+                value: '$lossCount',
+                color: AppColors.danger,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MiniStatBox(
+                label: t.breakEvenSales,
+                value: '$zeroCount',
+                color: AppColors.accent,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _MiniStatBox(
-            label: t.lossSales,
-            value: '$lossCount',
-            color: AppColors.danger,
+        if (count > 0) ...[
+          const SizedBox(height: 10),
+          Text(
+            t.tapForDetails,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _MiniStatBox(
-            label: t.breakEvenSales,
-            value: '$zeroCount',
-            color: AppColors.accent,
-          ),
-        ),
+        ],
       ],
+    );
+  }
+}
+
+class _ThinMarginListSheet extends StatelessWidget {
+  const _ThinMarginListSheet({
+    required this.sales,
+    required this.t,
+  });
+
+  final List<SaleRecord> sales;
+  final AppText t;
+
+  List<_ThinMarginProductGroup> get _groups {
+    final map = <String, List<SaleRecord>>{};
+    for (final sale in sales) {
+      map.putIfAbsent(sale.productCode, () => []).add(sale);
+    }
+    final groups = map.entries.map((e) {
+      final list = [...e.value]..sort((a, b) => a.profit.compareTo(b.profit));
+      return _ThinMarginProductGroup(
+        code: e.key,
+        name: list.first.productName,
+        sales: list,
+      );
+    }).toList()
+      ..sort((a, b) => a.worstProfit.compareTo(b.worstProfit));
+    return groups;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = _groups;
+    final height = MediaQuery.sizeOf(context).height * 0.85;
+
+    return SizedBox(
+      height: height,
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t.thinMarginListTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                t.thinMarginHint,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: groups.isEmpty
+                ? Center(
+                    child: Text(
+                      t.noThinMargin,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                    itemCount: groups.length,
+                    itemBuilder: (context, index) {
+                      final group = groups[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ExpansionTile(
+                          tilePadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 4,
+                          ),
+                          childrenPadding: const EdgeInsets.fromLTRB(
+                            12,
+                            0,
+                            12,
+                            12,
+                          ),
+                          title: Text(
+                            group.name,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Text(
+                            '${group.code} • ${group.sales.length} ${t.thinMarginSaleCount}\n'
+                            '${t.marginLabel} ${group.worstMargin.toStringAsFixed(1)}% • '
+                            '${t.profit} ${formatTaka(group.totalProfit)}',
+                          ),
+                          children: [
+                            for (final sale in group.sales)
+                              _ThinMarginSaleDetail(sale: sale, t: t),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThinMarginProductGroup {
+  _ThinMarginProductGroup({
+    required this.code,
+    required this.name,
+    required this.sales,
+  });
+
+  final String code;
+  final String name;
+  final List<SaleRecord> sales;
+
+  double get totalProfit => sales.fold(0, (s, e) => s + e.profit);
+  double get worstProfit => sales.first.profit;
+  double get worstMargin => sales.first.marginPercent;
+}
+
+class _ThinMarginSaleDetail extends StatelessWidget {
+  const _ThinMarginSaleDetail({required this.sale, required this.t});
+
+  final SaleRecord sale;
+  final AppText t;
+
+  @override
+  Widget build(BuildContext context) {
+    final payLabel = sale.paymentType == 'due'
+        ? t.dueSale
+        : sale.paymentType == 'return'
+            ? t.returnMode
+            : t.cash;
+    final marginColor = sale.profit < 0
+        ? AppColors.danger
+        : sale.marginPercent < 10
+            ? AppColors.accent
+            : AppColors.success;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  t.saleDetails,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                '${t.marginLabel} ${sale.marginPercent.toStringAsFixed(1)}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: marginColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${DateFormat('dd MMM yyyy, hh:mm a').format(sale.soldAt)} • $payLabel',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text('${t.qty}: ${sale.qty}'),
+          Text('${t.sellPrice}: ${formatTaka(sale.unitPrice)}'),
+          Text('${t.cost}: ${formatTaka(sale.costPrice)}'),
+          Text('${t.total}: ${formatTaka(sale.total)}'),
+          Text(
+            '${t.profit}: ${formatTaka(sale.profit)}',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: marginColor,
+            ),
+          ),
+          if (sale.customerName != null && sale.customerName!.isNotEmpty)
+            Text('${t.customerName}: ${sale.customerName}'),
+          if (sale.hasSalesman)
+            Text('${t.salesmanLabel}: ${sale.salesmanLabel}'),
+        ],
+      ),
     );
   }
 }
