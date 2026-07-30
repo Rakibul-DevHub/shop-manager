@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/l10n/app_text.dart';
+import '../../core/text/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../state/shop_store.dart';
 

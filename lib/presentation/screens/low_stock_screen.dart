@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/l10n/app_text.dart';
+import '../../core/text/app_text.dart';
 import '../state/shop_store.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/product_list_tile.dart';

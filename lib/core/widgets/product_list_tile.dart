@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../l10n/app_text.dart';
+import '../text/app_text.dart';
 import '../../domain/entities/discount.dart';
 import '../../domain/entities/product.dart';
 import '../../presentation/state/shop_store.dart';
