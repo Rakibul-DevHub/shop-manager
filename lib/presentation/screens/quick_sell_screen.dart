@@ -539,28 +539,72 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
     return SafeArea(child: body);
   }
 
+  void _clearSelectedProduct() {
+    setState(() {
+      _selected = null;
+      _codeController.clear();
+      _pieceQty = 1;
+      _weightController.text = '1';
+      _flexiblePrice = false;
+      _clearItemOfferForm();
+    });
+  }
+
   Widget _buildSelectedCard(AppText t) {
     final p = _selected!;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              p.code,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w700,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      p.code,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: t.remove,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: _clearSelectedProduct,
+                  icon: const Icon(Icons.close, size: 20),
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p.name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    '${p.variant} • ${t.storeQty}: ${p.storeStock}  •  ${t.warehouseQty}: ${p.warehouseStock}',
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              p.name,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            Text(
-              '${p.variant} • ${t.storeQty}: ${p.storeStock}  •  ${t.warehouseQty}: ${p.warehouseStock}',
-              style: const TextStyle(color: AppColors.textSecondary),
             ),
             if (_mode == 0) ...[
               const SizedBox(height: 10),
