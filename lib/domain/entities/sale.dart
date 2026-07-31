@@ -31,7 +31,7 @@ class SaleRecord {
   final int? customerId;
   final String? customerName;
 
-  /// Optional free-text salesman name / code entered at sell time.
+  /// Optional free-text salesman name (legacy; new sales use ID only).
   final String? salesmanName;
   final String? salesmanId;
 
@@ -39,17 +39,12 @@ class SaleRecord {
       total <= 0 ? 0.0 : (profit / total) * 100;
 
   bool get hasSalesman {
-    final name = salesmanName?.trim() ?? '';
     final sid = salesmanId?.trim() ?? '';
-    return name.isNotEmpty || sid.isNotEmpty;
+    return sid.isNotEmpty;
   }
 
   String get salesmanLabel {
-    final name = salesmanName?.trim() ?? '';
-    final sid = salesmanId?.trim() ?? '';
-    if (name.isNotEmpty && sid.isNotEmpty) return '$name ($sid)';
-    if (name.isNotEmpty) return name;
-    return sid;
+    return salesmanId?.trim() ?? '';
   }
 
   Map<String, Object?> toMap() => {

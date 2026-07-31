@@ -32,6 +32,7 @@ class QuickSellScreen extends StatefulWidget {
 
 class _QuickSellScreenState extends State<QuickSellScreen> {
   final _codeController = TextEditingController();
+  final _codeFocusNode = FocusNode();
   final _priceController = TextEditingController();
   final _weightController = TextEditingController(text: '1');
   final _itemDiscountValueController = TextEditingController();
@@ -39,7 +40,6 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
   final _discountReasonController = TextEditingController();
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
-  final _salesmanNameController = TextEditingController();
   final _salesmanIdController = TextEditingController();
 
   /// 0 = sell, 1 = return
@@ -74,6 +74,7 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
   @override
   void dispose() {
     _codeController.dispose();
+    _codeFocusNode.dispose();
     _priceController.dispose();
     _weightController.dispose();
     _itemDiscountValueController.dispose();
@@ -81,7 +82,6 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
     _discountReasonController.dispose();
     _customerNameController.dispose();
     _customerPhoneController.dispose();
-    _salesmanNameController.dispose();
     _salesmanIdController.dispose();
     super.dispose();
   }
@@ -161,6 +161,7 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
     if (!mounted) return;
     if (code == null || code.trim().isEmpty) return;
     _codeController.text = code.trim();
+    _codeFocusNode.unfocus();
     _findProduct();
   }
 
@@ -168,6 +169,13 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
     final store = context.read<ShopStore>();
     final t = AppText(store.languageCode);
     final match = store.findProductByCode(_codeController.text);
+    _applyFoundProduct(match);
+    if (match == null && _codeController.text.trim().isNotEmpty) {
+      showAppMessage(context, t.productNotFound);
+    }
+  }
+
+  void _applyFoundProduct(Product? match) {
     setState(() {
       _selected = match;
       _pieceQty = 1;
@@ -180,9 +188,120 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
         );
       }
     });
-    if (match == null && _codeController.text.trim().isNotEmpty) {
-      showAppMessage(context, t.productNotFound);
-    }
+  }
+
+  void _selectSuggestion(Product product) {
+    _codeFocusNode.unfocus();
+    _applyFoundProduct(product);
+  }
+
+  /// Prefer code prefix matches, then code contains, then name/variant.
+  List<Product> _codeSuggestions(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final products = context.read<ShopStore>().products;
+    final matches = products.where((p) {
+      return p.code.toLowerCase().contains(q) ||
+          p.name.toLowerCase().contains(q) ||
+          p.variant.toLowerCase().contains(q);
+    }).toList();
+    matches.sort((a, b) {
+      int rank(Product p) {
+        final code = p.code.toLowerCase();
+        if (code.startsWith(q)) return 0;
+        if (code.contains(q)) return 1;
+        return 2;
+      }
+
+      final cmp = rank(a).compareTo(rank(b));
+      if (cmp != 0) return cmp;
+      return a.code.toLowerCase().compareTo(b.code.toLowerCase());
+    });
+    return matches.take(10).toList();
+  }
+
+  Widget _buildCodeField(AppText t) {
+    return RawAutocomplete<Product>(
+      textEditingController: _codeController,
+      focusNode: _codeFocusNode,
+      displayStringForOption: (p) => p.code,
+      optionsBuilder: (textEditingValue) {
+        return _codeSuggestions(textEditingValue.text);
+      },
+      onSelected: _selectSuggestion,
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(
+            labelText: t.productCode,
+            hintText: 'TS001-L',
+            prefixIcon: IconButton(
+              tooltip: t.scanCodeTitle,
+              onPressed: _openScanner,
+              icon: const Icon(Icons.qr_code_scanner),
+            ),
+            suffixIcon: IconButton(
+              onPressed: _findProduct,
+              icon: const Icon(Icons.search),
+            ),
+          ),
+          onSubmitted: (_) {
+            onFieldSubmitted();
+            _findProduct();
+          },
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        final opts = options.toList();
+        final width = MediaQuery.sizeOf(context).width - 32;
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 6,
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: 260,
+                maxWidth: width,
+                minWidth: width > 280 ? 280 : width,
+              ),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                shrinkWrap: true,
+                itemCount: opts.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final p = opts[index];
+                  return ListTile(
+                    dense: true,
+                    title: Text(
+                      p.code,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${p.name}${p.variant.isEmpty ? '' : ' • ${p.variant}'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Text(
+                      formatTaka(p.sellPrice),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    onTap: () => onSelected(p),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _addToCart() {
@@ -292,7 +411,6 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
           discount: _discount,
           customerName: _customerNameController.text,
           customerPhone: _customerPhoneController.text,
-          salesmanName: _salesmanNameController.text,
           salesmanId: _salesmanIdController.text,
         );
     if (!mounted) return;
@@ -309,6 +427,7 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
       _discountReasonController.clear();
       _customerNameController.clear();
       _customerPhoneController.clear();
+      _salesmanIdController.clear();
       _paymentType = 'cash';
     });
     if (!mounted) return;
@@ -394,24 +513,7 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
                 number: 1,
                 text: 'Scan or type code, add lines to cart, then checkout',
               ),
-              TextField(
-                controller: _codeController,
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
-                  labelText: t.productCode,
-                  hintText: 'TS001-L',
-                  prefixIcon: IconButton(
-                    tooltip: t.scanCodeTitle,
-                    onPressed: _openScanner,
-                    icon: const Icon(Icons.qr_code_scanner),
-                  ),
-                  suffixIcon: IconButton(
-                    onPressed: _findProduct,
-                    icon: const Icon(Icons.search),
-                  ),
-                ),
-                onSubmitted: (_) => _findProduct(),
-              ),
+              _buildCodeField(t),
               const SizedBox(height: 12),
               if (_selected != null) _buildSelectedCard(t),
               if (_mode == 0) ...[
@@ -865,19 +967,9 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
           ),
         ],
         const SizedBox(height: 12),
-        Text(
-          t.salesmanOptional,
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _salesmanNameController,
-          decoration: InputDecoration(labelText: t.salesmanName),
-        ),
-        const SizedBox(height: 8),
         TextField(
           controller: _salesmanIdController,
-          decoration: InputDecoration(labelText: t.salesmanId),
+          decoration: InputDecoration(labelText: t.salesmanOptional),
         ),
         const SizedBox(height: 12),
         PrimaryButton(

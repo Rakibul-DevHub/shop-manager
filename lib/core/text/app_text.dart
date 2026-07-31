@@ -287,8 +287,7 @@ class AppText {
       isBn ? 'কম মার্জিনের বিক্রি নেই' : 'No thin-margin sales';
   String get marginLabel => isBn ? 'মার্জিন' : 'Margin';
   String get salesmanOptional =>
-      isBn ? 'সেলসম্যান (ঐচ্ছিক)' : 'Salesman (optional)';
-  String get salesmanName => isBn ? 'সেলসম্যান নাম' : 'Salesman name';
+      isBn ? 'সেলসম্যান আইডি (ঐচ্ছিক)' : 'Salesman ID (optional)';
   String get salesmanId => isBn ? 'সেলসম্যান আইডি' : 'Salesman ID';
   String get salesmanLabel => isBn ? 'সেলসম্যান' : 'Salesman';
 
