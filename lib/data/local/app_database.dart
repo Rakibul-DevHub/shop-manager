@@ -28,7 +28,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, version) async {
         await _createV1(db);
         await _createSettings(db);
@@ -37,6 +37,7 @@ class AppDatabase {
         await _ensureProductDiscountColumns(db);
         await _ensureSaleSalesmanColumns(db);
         await _ensureProductStoreStockColumn(db);
+        await _ensureStaffPostNameColumn(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -56,6 +57,9 @@ class AppDatabase {
         }
         if (oldVersion < 7) {
           await _ensureProductStoreStockColumn(db);
+        }
+        if (oldVersion < 8) {
+          await _ensureStaffPostNameColumn(db);
         }
       },
     );
@@ -127,6 +131,7 @@ class AppDatabase {
         name TEXT NOT NULL,
         phone TEXT NOT NULL,
         role TEXT NOT NULL,
+        post_name TEXT NOT NULL DEFAULT '',
         active INTEGER NOT NULL DEFAULT 1,
         can_sell INTEGER NOT NULL DEFAULT 1,
         can_products INTEGER NOT NULL DEFAULT 0,
@@ -138,6 +143,16 @@ class AppDatabase {
         created_at TEXT NOT NULL
       )
     ''');
+  }
+
+  Future<void> _ensureStaffPostNameColumn(Database db) async {
+    final info = await db.rawQuery('PRAGMA table_info(staff)');
+    final names = info.map((row) => row['name'] as String).toSet();
+    if (!names.contains('post_name')) {
+      await db.execute(
+        "ALTER TABLE staff ADD COLUMN post_name TEXT NOT NULL DEFAULT ''",
+      );
+    }
   }
 
   Future<void> _createV1(Database db) async {

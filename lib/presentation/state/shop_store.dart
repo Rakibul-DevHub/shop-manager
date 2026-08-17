@@ -333,21 +333,24 @@ class ShopStore extends ChangeNotifier {
           ? 'নাম ও ফোন দিন'
           : 'Enter name and phone';
     }
-    if (member.id == null) {
+    if (member.role == StaffRole.custom && member.postName.trim().isEmpty) {
+      return languageCode == 'bn'
+          ? 'কাস্টম রোলের পদবী দিন'
+          : 'Enter post name for custom role';
+    }
+    final cleaned = member.copyWith(
+      name: member.name.trim(),
+      phone: member.phone.trim(),
+      postName: member.role == StaffRole.custom
+          ? member.postName.trim()
+          : '',
+    );
+    if (cleaned.id == null) {
       await _repo.insertStaff(
-        member.copyWith(
-          name: member.name.trim(),
-          phone: member.phone.trim(),
-          createdAt: DateTime.now(),
-        ),
+        cleaned.copyWith(createdAt: DateTime.now()),
       );
     } else {
-      await _repo.updateStaff(
-        member.copyWith(
-          name: member.name.trim(),
-          phone: member.phone.trim(),
-        ),
-      );
+      await _repo.updateStaff(cleaned);
     }
     staff = await _repo.getStaff();
     notifyListeners();

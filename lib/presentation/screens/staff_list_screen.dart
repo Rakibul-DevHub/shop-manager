@@ -13,8 +13,11 @@ class StaffListScreen extends StatelessWidget {
 
   final bool focusAccess;
 
-  String _roleLabel(AppText t, StaffRole role) {
-    return switch (role) {
+  String _roleLabel(AppText t, StaffMember member) {
+    if (member.role == StaffRole.custom && member.postName.trim().isNotEmpty) {
+      return member.postName.trim();
+    }
+    return switch (member.role) {
       StaffRole.cashier => t.roleCashier,
       StaffRole.manager => t.roleManager,
       StaffRole.admin => t.roleAdmin,
@@ -86,14 +89,14 @@ class StaffListScreen extends StatelessWidget {
                     ),
                     subtitle: Text(
                       focusAccess
-                          ? '${_roleLabel(t, member.role)} • '
+                          ? '${_roleLabel(t, member)} • '
                               '${[
                                 if (member.canSell) t.permSell,
                                 if (member.canProducts) t.permProducts,
                                 if (member.canDues) t.permDues,
                                 if (member.canReports) t.permReports,
                               ].join(', ')}'
-                          : '${member.phone} • ${_roleLabel(t, member.role)}'
+                          : '${member.phone} • ${_roleLabel(t, member)}'
                               '${member.active ? '' : ' • off'}',
                     ),
                     trailing: const Icon(Icons.chevron_right),

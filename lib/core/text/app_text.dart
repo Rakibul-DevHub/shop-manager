@@ -401,6 +401,12 @@ class AppText {
   String get roleManager => isBn ? 'ম্যানেজার' : 'Manager';
   String get roleAdmin => isBn ? 'অ্যাডমিন' : 'Admin';
   String get roleCustom => isBn ? 'কাস্টম' : 'Custom';
+  String get postName => isBn ? 'পদবী / পোস্ট নাম' : 'Post name';
+  String get postNameHint => isBn
+      ? 'যেমন: সেলসম্যান, স্টোরকিপার'
+      : 'e.g. Salesman, Storekeeper';
+  String get postNameRequired =>
+      isBn ? 'কাস্টম রোলের পদবী দিন' : 'Enter post name for custom role';
   String get permSell => isBn ? 'বিক্রি' : 'Sell';
   String get permProducts => isBn ? 'পণ্য' : 'Products';
   String get permDues => isBn ? 'বাকি' : 'Dues';

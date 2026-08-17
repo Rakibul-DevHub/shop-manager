@@ -20,6 +20,7 @@ class StaffFormScreen extends StatefulWidget {
 class _StaffFormScreenState extends State<StaffFormScreen> {
   late final TextEditingController _name;
   late final TextEditingController _phone;
+  late final TextEditingController _postName;
   late StaffMember _draft;
   bool _saving = false;
 
@@ -38,12 +39,14 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
         ).withRoleDefaults(StaffRole.cashier);
     _name = TextEditingController(text: _draft.name);
     _phone = TextEditingController(text: _draft.phone);
+    _postName = TextEditingController(text: _draft.postName);
   }
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
+    _postName.dispose();
     super.dispose();
   }
 
@@ -61,7 +64,11 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     final store = context.read<ShopStore>();
     final t = AppText(store.languageCode);
     final error = await store.saveStaff(
-      _draft.copyWith(name: _name.text, phone: _phone.text),
+      _draft.copyWith(
+        name: _name.text,
+        phone: _phone.text,
+        postName: _postName.text,
+      ),
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -161,11 +168,27 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                     _draft = role == StaffRole.custom
                         ? _draft.copyWith(role: role)
                         : _draft.withRoleDefaults(role);
+                    if (role != StaffRole.custom) {
+                      _postName.clear();
+                    }
                   });
                 },
               );
             }).toList(),
           ),
+          if (_draft.role == StaffRole.custom) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _postName,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: '${t.postName} *',
+                hintText: t.postNameHint,
+              ),
+              onChanged: (v) =>
+                  setState(() => _draft = _draft.copyWith(postName: v)),
+            ),
+          ],
           const SizedBox(height: 8),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,

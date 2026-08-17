@@ -4,6 +4,7 @@ class StaffMember {
     required this.name,
     required this.phone,
     this.role = StaffRole.cashier,
+    this.postName = '',
     this.active = true,
     this.canSell = true,
     this.canProducts = false,
@@ -19,6 +20,9 @@ class StaffMember {
   final String name;
   final String phone;
   final StaffRole role;
+
+  /// Job / post title used when [role] is [StaffRole.custom].
+  final String postName;
   final bool active;
   final bool canSell;
   final bool canProducts;
@@ -34,6 +38,7 @@ class StaffMember {
     String? name,
     String? phone,
     StaffRole? role,
+    String? postName,
     bool? active,
     bool? canSell,
     bool? canProducts,
@@ -49,6 +54,7 @@ class StaffMember {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       role: role ?? this.role,
+      postName: postName ?? this.postName,
       active: active ?? this.active,
       canSell: canSell ?? this.canSell,
       canProducts: canProducts ?? this.canProducts,
@@ -66,6 +72,7 @@ class StaffMember {
     return switch (nextRole) {
       StaffRole.cashier => copyWith(
           role: nextRole,
+          postName: '',
           canSell: true,
           canProducts: false,
           canDues: false,
@@ -76,6 +83,7 @@ class StaffMember {
         ),
       StaffRole.manager => copyWith(
           role: nextRole,
+          postName: '',
           canSell: true,
           canProducts: true,
           canDues: true,
@@ -86,6 +94,7 @@ class StaffMember {
         ),
       StaffRole.admin => copyWith(
           role: nextRole,
+          postName: '',
           canSell: true,
           canProducts: true,
           canDues: true,
@@ -103,6 +112,7 @@ class StaffMember {
         'name': name,
         'phone': phone,
         'role': role.name,
+        'post_name': postName,
         'active': active ? 1 : 0,
         'can_sell': canSell ? 1 : 0,
         'can_products': canProducts ? 1 : 0,
@@ -120,6 +130,7 @@ class StaffMember {
       name: map['name']! as String,
       phone: map['phone']! as String,
       role: StaffRole.fromName(map['role'] as String?),
+      postName: (map['post_name'] as String?) ?? '',
       active: (map['active'] as int? ?? 1) == 1,
       canSell: (map['can_sell'] as int? ?? 0) == 1,
       canProducts: (map['can_products'] as int? ?? 0) == 1,

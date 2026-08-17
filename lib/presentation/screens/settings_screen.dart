@@ -17,7 +17,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late String _language;
   late TextEditingController _shopNameController;
-  late TextEditingController _thresholdController;
   String? _shopType;
   late bool _warehouseEnabled;
   late bool _expiryEnabled;
@@ -30,9 +29,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _language = store.languageCode;
     _shopNameController = TextEditingController(text: store.shop?.name ?? '');
     _shopType = store.shop?.type;
-    _thresholdController = TextEditingController(
-      text: '${store.lowStockThreshold}',
-    );
     _warehouseEnabled = store.warehouseInventoryEnabled;
     _expiryEnabled = store.expiryFeatureEnabled;
   }
@@ -40,7 +36,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _shopNameController.dispose();
-    _thresholdController.dispose();
     super.dispose();
   }
 
@@ -53,7 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final error = await store.saveShop(
       name: _shopNameController.text,
       type: _shopType ?? store.shop?.type ?? ShopStore.shopTypes.first,
-      lowStockThreshold: int.tryParse(_thresholdController.text.trim()) ?? 5,
+      lowStockThreshold: store.lowStockThreshold,
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -145,15 +140,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   checkmarkColor: Colors.white,
                 );
               }).toList(),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _thresholdController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: t.lowStock,
-                helperText: t.lowStockHint,
-              ),
             ),
             const SizedBox(height: 24),
             Text(
