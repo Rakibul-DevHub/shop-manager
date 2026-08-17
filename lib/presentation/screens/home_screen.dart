@@ -10,13 +10,11 @@ import '../state/shop_store.dart';
 import 'daily_report_screen.dart';
 import 'due_customers_screen.dart';
 import 'expense_screen.dart';
-import 'expiring_products_screen.dart';
 import 'low_stock_screen.dart';
-import 'products_screen.dart';
 import 'quick_sell_screen.dart';
 import 'sale_history_screen.dart';
 
-/// Home: shop name + Quick Sell + sales / cost / stock summary.
+/// Home: shop name + Quick Sell + sales / cost summary.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -159,7 +157,7 @@ class HomeScreen extends StatelessWidget {
                 const TapHint(
                   number: 2,
                   text:
-                      'Tap a summary card for history, stock, dues, or expense',
+                      'Tap a summary card for history, dues, or expense',
                 ),
                 const SizedBox(height: 8),
                 LayoutBuilder(
@@ -216,23 +214,6 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                         _SummaryCard(
-                          icon: Icons.inventory_2_outlined,
-                          label: t.stockItems,
-                          value: '${store.totalStockQty} ${t.itemsUnit}',
-                          hint:
-                              '${t.storeQty}: ${store.totalStoreQty} • ${t.warehouseQty}: ${store.totalWarehouseQty}',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => Scaffold(
-                                  appBar: AppBar(),
-                                  body: const ProductsScreen(),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        _SummaryCard(
                           icon: Icons.warning_amber_rounded,
                           label: t.lowStock,
                           value: '${store.lowStockProducts.length}',
@@ -246,24 +227,6 @@ class HomeScreen extends StatelessWidget {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => const LowStockScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _SummaryCard(
-                          icon: Icons.event_busy_outlined,
-                          label: t.expiryAlerts,
-                          value: '${store.expiryAlertProducts.length}',
-                          tint: store.expiryAlertProducts.isEmpty
-                              ? AppColors.primaryLight
-                              : const Color(0xFFFFEBEE),
-                          iconColor: store.expiryAlertProducts.isEmpty
-                              ? AppColors.primary
-                              : AppColors.danger,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const ExpiringProductsScreen(),
                               ),
                             );
                           },
