@@ -245,6 +245,16 @@ class AppText {
   String get savePayment =>
       isBn ? 'পেমেন্ট সেভ করুন' : 'Save payment';
   String get totalDueLabel => isBn ? 'মোট বাকি' : 'Total due';
+  String get paymentDate => isBn ? 'পেমেন্ট তারিখ' : 'Payment date';
+  String get pickPaymentDate =>
+      isBn ? 'ক্যালেন্ডার থেকে তারিখ বাছুন' : 'Pick date from calendar';
+  String get paymentDateRequired =>
+      isBn ? 'পেমেন্ট তারিখ দিন' : 'Please pick a payment date';
+  String get paymentHistory =>
+      isBn ? 'পেমেন্ট হিস্ট্রি' : 'Payment history';
+  String get noPaymentsYet =>
+      isBn ? 'এখনো কোনো পেমেন্ট নেই' : 'No payments yet';
+  String get paidAmount => isBn ? 'জমা' : 'Paid';
 
   String get expenseTitle => isBn ? 'খরচ যোগ করুন' : 'Add expense';
   String get expenseHint =>

@@ -1,5 +1,6 @@
 import '../../domain/entities/customer.dart';
 import '../../domain/entities/expense.dart';
+import '../../domain/entities/payment.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/staff.dart';
@@ -85,8 +86,17 @@ class LocalShopRepository implements ShopRepository {
   Future<void> insertPayment({
     required int customerId,
     required double amount,
+    required DateTime paidAt,
   }) =>
-      _db.insertPayment(customerId: customerId, amount: amount);
+      _db.insertPayment(
+        customerId: customerId,
+        amount: amount,
+        paidAt: paidAt,
+      );
+
+  @override
+  Future<List<Payment>> getPaymentsForCustomer(int customerId) =>
+      _db.getPaymentsForCustomer(customerId);
 
   @override
   Future<int> insertSale(SaleRecord sale) => _db.insertSale(sale);

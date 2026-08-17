@@ -13,6 +13,14 @@ import 'payment_collection_screen.dart';
 class DueCustomersScreen extends StatelessWidget {
   const DueCustomersScreen({super.key});
 
+  void _openCollect(BuildContext context, Customer customer) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PaymentCollectionScreen(customer: customer),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<ShopStore>();
@@ -52,14 +60,8 @@ class DueCustomersScreen extends StatelessWidget {
                       customer: customer,
                       collectLabel: t.collectMoney,
                       dueLabel: t.due,
-                      onCollect: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                PaymentCollectionScreen(customer: customer),
-                          ),
-                        );
-                      },
+                      tapHint: t.tapForDetails,
+                      onOpen: () => _openCollect(context, customer),
                     ),
                   ),
                 ),
@@ -75,86 +77,101 @@ class _DueCard extends StatelessWidget {
     required this.customer,
     required this.collectLabel,
     required this.dueLabel,
-    required this.onCollect,
+    required this.tapHint,
+    required this.onOpen,
   });
 
   final Customer customer;
   final String collectLabel;
   final String dueLabel;
-  final VoidCallback onCollect;
+  final String tapHint;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppColors.primaryLight,
-                  child: Text(
-                    customer.name.isEmpty
-                        ? '?'
-                        : String.fromCharCodes(customer.name.runes.take(1)),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppColors.primaryLight,
+                    child: Text(
+                      customer.name.isEmpty
+                          ? '?'
+                          : String.fromCharCodes(customer.name.runes.take(1)),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          customer.name,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          customer.phone,
+                          style: const TextStyle(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          tapHint,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        customer.name,
+                        dueLabel,
                         style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       Text(
-                        customer.phone,
-                        style: const TextStyle(color: AppColors.textSecondary),
+                        formatTaka(customer.dueAmount),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.danger,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      dueLabel,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      formatTaka(customer.dueAmount),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.danger,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onCollect,
-                child: Text(collectLabel),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: onOpen,
+                  child: Text(collectLabel),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

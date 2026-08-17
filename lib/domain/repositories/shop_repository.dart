@@ -1,5 +1,6 @@
 import '../entities/customer.dart';
 import '../entities/expense.dart';
+import '../entities/payment.dart';
 import '../entities/product.dart';
 import '../entities/sale.dart';
 import '../entities/staff.dart';
@@ -36,7 +37,12 @@ abstract class ShopRepository {
   Future<Customer?> getCustomerByPhone(String phone);
   Future<int> insertCustomer(Customer customer);
   Future<void> updateCustomer(Customer customer);
-  Future<void> insertPayment({required int customerId, required double amount});
+  Future<void> insertPayment({
+    required int customerId,
+    required double amount,
+    required DateTime paidAt,
+  });
+  Future<List<Payment>> getPaymentsForCustomer(int customerId);
 
   // Sales
   Future<int> insertSale(SaleRecord sale);

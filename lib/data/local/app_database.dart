@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/customer.dart';
 import '../../domain/entities/discount.dart';
 import '../../domain/entities/expense.dart';
+import '../../domain/entities/payment.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/staff.dart';
@@ -474,13 +475,25 @@ class AppDatabase {
   Future<void> insertPayment({
     required int customerId,
     required double amount,
+    required DateTime paidAt,
   }) async {
     final db = await database;
     await db.insert('payments', {
       'customer_id': customerId,
       'amount': amount,
-      'created_at': DateTime.now().toIso8601String(),
+      'created_at': paidAt.toIso8601String(),
     });
+  }
+
+  Future<List<Payment>> getPaymentsForCustomer(int customerId) async {
+    final db = await database;
+    final rows = await db.query(
+      'payments',
+      where: 'customer_id = ?',
+      whereArgs: [customerId],
+      orderBy: 'created_at DESC',
+    );
+    return rows.map(Payment.fromMap).toList();
   }
 
   Future<bool> hasAnyProducts() async {

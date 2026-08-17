@@ -6,6 +6,7 @@ import '../../domain/entities/cart.dart';
 import '../../domain/entities/discount.dart';
 import '../../domain/entities/customer.dart';
 import '../../domain/entities/expense.dart';
+import '../../domain/entities/payment.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/staff.dart';
@@ -764,6 +765,7 @@ class ShopStore extends ChangeNotifier {
   Future<String?> collectPayment({
     required Customer customer,
     required double amount,
+    required DateTime paidAt,
   }) async {
     if (amount <= 0) {
       return languageCode == 'bn'
@@ -777,10 +779,17 @@ class ShopStore extends ChangeNotifier {
     }
     final remaining = customer.dueAmount - amount;
     await _repo.updateCustomer(customer.copyWith(dueAmount: remaining));
-    await _repo.insertPayment(customerId: customer.id!, amount: amount);
+    await _repo.insertPayment(
+      customerId: customer.id!,
+      amount: amount,
+      paidAt: paidAt,
+    );
     await refreshAll();
     return null;
   }
+
+  Future<List<Payment>> paymentsForCustomer(int customerId) =>
+      _repo.getPaymentsForCustomer(customerId);
 
   Future<String?> addExpense({
     required String type,
