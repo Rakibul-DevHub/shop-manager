@@ -74,7 +74,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Widget _expiryBanner(ShopStore store, AppText t) {
-    if (store.expiryAlertProducts.isEmpty) return const SizedBox.shrink();
+    if (!store.expiryFeatureEnabled || store.expiryAlertProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Material(
@@ -113,41 +115,51 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
+  Future<void> _openAddProduct() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AddProductScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<ShopStore>();
     final t = AppText(store.languageCode);
     final items = store.searchProducts(_searchController.text);
-    final isStore = _tab == 0;
+    final warehouseOn = store.warehouseInventoryEnabled;
+    final isStore = !warehouseOn || _tab == 0;
 
     return SafeArea(
       child: Column(
         children: [
           ScreenHeader(
-            title: t.productsTitle,
-            subtitle: isStore ? t.storeHint : t.stockHint,
+            title: warehouseOn ? t.productsTitle : t.productsTitleSimple,
+            subtitle: warehouseOn
+                ? (isStore ? t.storeHint : t.stockHint)
+                : t.storeHintSimple,
             trailing: OfflineBadge(label: t.offline),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SegmentedButton<int>(
-              segments: [
-                ButtonSegment(
-                  value: 0,
-                  label: Text(t.storeTab),
-                  icon: const Icon(Icons.storefront_outlined, size: 18),
-                ),
-                ButtonSegment(
-                  value: 1,
-                  label: Text(t.stockTab),
-                  icon: const Icon(Icons.inventory_2_outlined, size: 18),
-                ),
-              ],
-              selected: {_tab},
-              onSelectionChanged: (v) => setState(() => _tab = v.first),
+          if (warehouseOn)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedButton<int>(
+                segments: [
+                  ButtonSegment(
+                    value: 0,
+                    label: Text(t.storeTab),
+                    icon: const Icon(Icons.storefront_outlined, size: 18),
+                  ),
+                  ButtonSegment(
+                    value: 1,
+                    label: Text(t.stockTab),
+                    icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                  ),
+                ],
+                selected: {_tab},
+                onSelectionChanged: (v) => setState(() => _tab = v.first),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+          if (warehouseOn) const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
@@ -163,12 +175,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
           const SizedBox(height: 8),
           _expiryBanner(store, t),
           const SizedBox(height: 8),
-          if (isStore)
+          if (isStore) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TapHint(number: 1, text: t.storeHint),
-            )
-          else ...[
+              child: TapHint(
+                number: 1,
+                text: warehouseOn ? t.storeHint : t.storeHintSimple,
+              ),
+            ),
+            if (!warehouseOn)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _openAddProduct,
+                    icon: const Icon(Icons.add),
+                    label: Text(t.addProduct),
+                  ),
+                ),
+              ),
+          ] else ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TapHint(number: 1, text: t.stockHint),
@@ -178,13 +205,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const AddProductScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _openAddProduct,
                   icon: const Icon(Icons.add),
                   label: Text(t.addProduct),
                 ),
@@ -239,10 +260,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 value: 'sell',
                                 child: Text(t.sell),
                               ),
-                              PopupMenuItem(
-                                value: 'toWarehouse',
-                                child: Text(t.returnToWarehouse),
-                              ),
+                              if (warehouseOn)
+                                PopupMenuItem(
+                                  value: 'toWarehouse',
+                                  child: Text(t.returnToWarehouse),
+                                ),
                             ],
                             child: _QtyChip(
                               label: t.storeQty,

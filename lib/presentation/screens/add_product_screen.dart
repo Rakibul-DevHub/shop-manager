@@ -24,7 +24,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _costController = TextEditingController();
   final _sellController = TextEditingController();
   final _stockController = TextEditingController();
-  final _storeStockController = TextEditingController(text: '0');
+  final _storeStockController = TextEditingController();
   final _discountValueController = TextEditingController();
   DateTime? _expiryDate;
   DiscountType _discountType = DiscountType.none;
@@ -59,25 +59,90 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
+  String? _validate(ShopStore store, AppText t) {
+    final name = _nameController.text.trim();
+    final variant = _variantController.text.trim();
+    final code = _codeController.text.trim();
+    final costText = _costController.text.trim();
+    final sellText = _sellController.text.trim();
+    final stockText = _stockController.text.trim();
+    final storeStockText = _storeStockController.text.trim();
+    final discountText = _discountValueController.text.trim();
+
+    if (name.isEmpty ||
+        variant.isEmpty ||
+        code.isEmpty ||
+        costText.isEmpty ||
+        sellText.isEmpty ||
+        stockText.isEmpty ||
+        (store.warehouseInventoryEnabled && storeStockText.isEmpty)) {
+      return t.fillAllFields;
+    }
+
+    final cost = double.tryParse(costText);
+    final sell = double.tryParse(sellText);
+    if (cost == null || cost < 0 || sell == null || sell < 0) {
+      return t.invalidPrice;
+    }
+
+    final stockQty = int.tryParse(stockText);
+    if (stockQty == null || stockQty < 0) {
+      return t.invalidStockQty;
+    }
+    if (store.warehouseInventoryEnabled) {
+      final storeQty = int.tryParse(storeStockText);
+      if (storeQty == null || storeQty < 0) {
+        return t.invalidStockQty;
+      }
+    }
+
+    if (_discountType != DiscountType.none) {
+      if (discountText.isEmpty) return t.discountValueRequired;
+      final value = double.tryParse(discountText);
+      if (value == null || value < 0) return t.discountValueRequired;
+      if (_discountType == DiscountType.percent && value > 100) {
+        return store.languageCode == 'bn'
+            ? 'শতাংশ ১০০-এর বেশি হতে পারে না'
+            : 'Percent cannot be over 100';
+      }
+    }
+
+    if (store.expiryFeatureEnabled && _expiryDate == null) {
+      return t.expiryRequired;
+    }
+
+    return null;
+  }
+
   Future<void> _save() async {
-    setState(() => _saving = true);
     final store = context.read<ShopStore>();
+    final t = AppText(store.languageCode);
+    final validationError = _validate(store, t);
+    if (validationError != null) {
+      showAppMessage(context, validationError);
+      return;
+    }
+
+    setState(() => _saving = true);
+    final warehouseOn = store.warehouseInventoryEnabled;
+    final stockQty = int.parse(_stockController.text.trim());
+    final storeQty = warehouseOn
+        ? int.parse(_storeStockController.text.trim())
+        : stockQty;
     final error = await store.addProduct(
       Product(
         code: _codeController.text.trim().toUpperCase(),
         name: _nameController.text.trim(),
-        variant: _variantController.text.trim().isEmpty
-            ? '-'
-            : _variantController.text.trim(),
-        costPrice: double.tryParse(_costController.text.trim()) ?? 0,
-        sellPrice: double.tryParse(_sellController.text.trim()) ?? 0,
-        warehouseStock: int.tryParse(_stockController.text.trim()) ?? 0,
-        storeStock: int.tryParse(_storeStockController.text.trim()) ?? 0,
-        expiryDate: _expiryDate,
+        variant: _variantController.text.trim(),
+        costPrice: double.parse(_costController.text.trim()),
+        sellPrice: double.parse(_sellController.text.trim()),
+        warehouseStock: warehouseOn ? stockQty : 0,
+        storeStock: storeQty,
+        expiryDate: store.expiryFeatureEnabled ? _expiryDate : null,
         discountType: _discountType,
         discountValue: _discountType == DiscountType.none
             ? 0
-            : (double.tryParse(_discountValueController.text.trim()) ?? 0),
+            : double.parse(_discountValueController.text.trim()),
       ),
     );
     if (!mounted) return;
@@ -92,7 +157,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppText(context.watch<ShopStore>().languageCode);
+    final store = context.watch<ShopStore>();
+    final t = AppText(store.languageCode);
+    final warehouseOn = store.warehouseInventoryEnabled;
+    final expiryOn = store.expiryFeatureEnabled;
     final expiryLabel = _expiryDate == null
         ? t.noExpiry
         : DateFormat('dd MMM yyyy').format(_expiryDate!);
@@ -121,7 +189,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: t.productName,
+                  labelText: '${t.productName} *',
                   hintText: 'টি-শার্ট',
                 ),
               ),
@@ -132,7 +200,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     child: TextField(
                       controller: _variantController,
                       decoration: InputDecoration(
-                        labelText: t.variant,
+                        labelText: '${t.variant} *',
                         hintText: 'L / 5kg',
                       ),
                     ),
@@ -143,7 +211,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       controller: _codeController,
                       textCapitalization: TextCapitalization.characters,
                       decoration: InputDecoration(
-                        labelText: t.codeLabel,
+                        labelText: '${t.codeLabel} *',
                         hintText: 'TS002-L',
                       ),
                     ),
@@ -158,7 +226,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       controller: _costController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: t.costPrice,
+                        labelText: '${t.costPrice} *',
                         prefixText: '৳ ',
                       ),
                     ),
@@ -169,7 +237,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       controller: _sellController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: t.sellPriceField,
+                        labelText: '${t.sellPriceField} *',
                         prefixText: '৳ ',
                       ),
                       onChanged: (_) => setState(() {}),
@@ -178,25 +246,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _stockController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: t.warehouseQty,
-                  hintText: '20',
-                  helperText: t.stockHint,
+              if (warehouseOn) ...[
+                TextField(
+                  controller: _stockController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: '${t.warehouseQty} *',
+                    hintText: '20',
+                    helperText: t.stockHint,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _storeStockController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: t.storeQty,
-                  hintText: '0',
-                  helperText: t.storeHint,
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _storeStockController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: '${t.storeQty} *',
+                    hintText: '0',
+                    helperText: t.storeHint,
+                  ),
                 ),
-              ),
+              ] else
+                TextField(
+                  controller: _stockController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: '${t.stockCount} *',
+                    hintText: '20',
+                  ),
+                ),
               const SizedBox(height: 16),
               Text(
                 t.productDiscount,
@@ -244,8 +322,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: _discountType == DiscountType.percent
-                        ? t.discountPercent
-                        : t.discountAmount,
+                        ? '${t.discountPercent} *'
+                        : '${t.discountAmount} *',
                     prefixText:
                         _discountType == DiscountType.percent ? null : '৳ ',
                     suffixText:
@@ -264,84 +342,86 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ],
               ],
-              const SizedBox(height: 16),
-              Text(
-                t.expiryDate,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                t.expiryDateHint,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+              if (expiryOn) ...[
+                const SizedBox(height: 16),
+                Text(
+                  '${t.expiryDate} *',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Material(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
+                const SizedBox(height: 4),
+                Text(
+                  t.expiryDateHint,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Material(
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
-                  onTap: _pickExpiry,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.event_outlined,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.expiryDateOptional,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              Text(
-                                expiryLabel,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _pickExpiry,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.event_outlined,
+                            color: AppColors.primary,
                           ),
-                        ),
-                        if (_expiryDate != null)
-                          IconButton(
-                            tooltip: t.clearExpiryDate,
-                            onPressed: () =>
-                                setState(() => _expiryDate = null),
-                            icon: const Icon(Icons.close),
-                          )
-                        else
-                          Text(
-                            t.setExpiryDate,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  t.expiryDate,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                Text(
+                                  expiryLabel,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                      ],
+                          if (_expiryDate != null)
+                            IconButton(
+                              tooltip: t.clearExpiryDate,
+                              onPressed: () =>
+                                  setState(() => _expiryDate = null),
+                              icon: const Icon(Icons.close),
+                            )
+                          else
+                            Text(
+                              t.setExpiryDate,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
@@ -351,9 +431,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  context.watch<ShopStore>().languageCode == 'bn'
-                      ? 'নাম → দাম → ওয়্যারহাউস/স্টোর পরিমাণ → (ঐচ্ছিক ছাড়/মেয়াদ) → সেভ।'
-                      : 'Name → price → warehouse/store qty → (optional offer/expiry) → save.',
+                  store.languageCode == 'bn'
+                      ? 'সব ঘর পূরণ করতে হবে। খালি রাখা যাবে না।'
+                      : 'All fields are required. Empty values are not allowed.',
                 ),
               ),
               const SizedBox(height: 24),

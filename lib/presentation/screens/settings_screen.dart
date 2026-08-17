@@ -19,6 +19,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _shopNameController;
   late TextEditingController _thresholdController;
   String? _shopType;
+  late bool _warehouseEnabled;
+  late bool _expiryEnabled;
   bool _saving = false;
 
   @override
@@ -31,6 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _thresholdController = TextEditingController(
       text: '${store.lowStockThreshold}',
     );
+    _warehouseEnabled = store.warehouseInventoryEnabled;
+    _expiryEnabled = store.expiryFeatureEnabled;
   }
 
   @override
@@ -44,6 +48,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _saving = true);
     final store = context.read<ShopStore>();
     await store.setLanguage(_language);
+    await store.setWarehouseInventoryEnabled(_warehouseEnabled);
+    await store.setExpiryFeatureEnabled(_expiryEnabled);
     final error = await store.saveShop(
       name: _shopNameController.text,
       type: _shopType ?? store.shop?.type ?? ShopStore.shopTypes.first,
@@ -148,6 +154,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 labelText: t.lowStock,
                 helperText: t.lowStockHint,
               ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              t.featureOptions,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(t.warehouseInventory),
+              subtitle: Text(t.warehouseInventoryHint),
+              value: _warehouseEnabled,
+              activeThumbColor: AppColors.primary,
+              onChanged: (v) => setState(() => _warehouseEnabled = v),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(t.expiryTracking),
+              subtitle: Text(t.expiryTrackingHint),
+              value: _expiryEnabled,
+              activeThumbColor: AppColors.primary,
+              onChanged: (v) => setState(() => _expiryEnabled = v),
             ),
             const SizedBox(height: 24),
             PrimaryButton(

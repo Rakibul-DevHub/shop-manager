@@ -27,8 +27,9 @@ class ProductListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppText(context.watch<ShopStore>().languageCode);
-    final threshold = context.watch<ShopStore>().lowStockThreshold;
+    final store = context.watch<ShopStore>();
+    final t = AppText(store.languageCode);
+    final threshold = store.lowStockThreshold;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
@@ -61,7 +62,9 @@ class ProductListTile extends StatelessWidget {
               if (qtyFocus == ProductQtyFocus.both) ...[
                 const SizedBox(height: 4),
                 Text(
-                  '${t.storeQty}: ${product.storeStock}  •  ${t.warehouseQty}: ${product.warehouseStock}',
+                  store.warehouseInventoryEnabled
+                      ? '${t.storeQty}: ${product.storeStock}  •  ${t.warehouseQty}: ${product.warehouseStock}'
+                      : '${t.stock}: ${product.storeStock}',
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -78,7 +81,7 @@ class ProductListTile extends StatelessWidget {
                   ),
                 ),
               ],
-              if (product.hasExpiry) ...[
+              if (store.expiryFeatureEnabled && product.hasExpiry) ...[
                 const SizedBox(height: 6),
                 _ExpiryBadge(product: product, t: t),
               ],

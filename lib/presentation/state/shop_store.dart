@@ -28,6 +28,13 @@ class ShopStore extends ChangeNotifier {
 
   /// Default English; Bangla only after the user selects it.
   String languageCode = 'en';
+
+  /// Optional warehouse (Stock tab + transfers). Off until enabled in Settings.
+  bool warehouseInventoryEnabled = false;
+
+  /// Optional product expiry dates / alerts. Off until enabled in Settings.
+  bool expiryFeatureEnabled = false;
+
   AppUser? currentUser;
   ShopProfile? shop;
   OwnerProfile ownerProfile = const OwnerProfile();
@@ -66,31 +73,43 @@ class ShopStore extends ChangeNotifier {
   bool get hasShop => shop != null;
   int get lowStockThreshold => shop?.lowStockThreshold ?? 5;
 
-  List<Product> get lowStockProducts =>
-      products
-          .where(
-            (p) =>
-                p.storeStock <= lowStockThreshold ||
-                p.warehouseStock <= lowStockThreshold,
-          )
+  List<Product> get lowStockProducts {
+    if (!warehouseInventoryEnabled) {
+      return products
+          .where((p) => p.storeStock <= lowStockThreshold)
           .toList()
-        ..sort((a, b) => a.totalStock.compareTo(b.totalStock));
+        ..sort((a, b) => a.storeStock.compareTo(b.storeStock));
+    }
+    return products
+        .where(
+          (p) =>
+              p.storeStock <= lowStockThreshold ||
+              p.warehouseStock <= lowStockThreshold,
+        )
+        .toList()
+      ..sort((a, b) => a.totalStock.compareTo(b.totalStock));
+  }
 
-  List<Product> get expiredProducts =>
-      products.where((p) => p.isExpired).toList()
-        ..sort((a, b) => a.expiryDay!.compareTo(b.expiryDay!));
+  List<Product> get expiredProducts {
+    if (!expiryFeatureEnabled) return [];
+    return products.where((p) => p.isExpired).toList()
+      ..sort((a, b) => a.expiryDay!.compareTo(b.expiryDay!));
+  }
 
-  List<Product> get expiringSoonProducts => products
-      .where(
-        (p) => p.isExpiringSoon(withinDays: AppConstants.expiryWarningDays),
-      )
-      .toList()
-    ..sort((a, b) => a.expiryDay!.compareTo(b.expiryDay!));
+  List<Product> get expiringSoonProducts {
+    if (!expiryFeatureEnabled) return [];
+    return products
+        .where(
+          (p) => p.isExpiringSoon(withinDays: AppConstants.expiryWarningDays),
+        )
+        .toList()
+      ..sort((a, b) => a.expiryDay!.compareTo(b.expiryDay!));
+  }
 
   /// Expired + expiring soon, expired first.
   List<Product> get expiryAlertProducts {
-    final list = [...expiredProducts, ...expiringSoonProducts];
-    return list;
+    if (!expiryFeatureEnabled) return [];
+    return [...expiredProducts, ...expiringSoonProducts];
   }
 
   double get todaySalesTotal => todaySales.fold(0, (sum, s) => sum + s.total);
@@ -172,6 +191,14 @@ class ShopStore extends ChangeNotifier {
       onboardingDone = await _repo.getBoolSetting('onboarding_done');
       languageSelected = await _repo.getBoolSetting('language_selected');
       languageCode = await _repo.getSetting('language_code') ?? 'en';
+      warehouseInventoryEnabled = await _repo.getBoolSetting(
+        'warehouse_inventory_enabled',
+        fallback: false,
+      );
+      expiryFeatureEnabled = await _repo.getBoolSetting(
+        'expiry_feature_enabled',
+        fallback: false,
+      );
 
       final login = await _repo.getSetting('user_login');
       if (login != null && login.isNotEmpty) {
@@ -189,6 +216,18 @@ class ShopStore extends ChangeNotifier {
       ready = true;
       notifyListeners();
     }
+  }
+
+  Future<void> setWarehouseInventoryEnabled(bool enabled) async {
+    await _repo.setBoolSetting('warehouse_inventory_enabled', enabled);
+    warehouseInventoryEnabled = enabled;
+    notifyListeners();
+  }
+
+  Future<void> setExpiryFeatureEnabled(bool enabled) async {
+    await _repo.setBoolSetting('expiry_feature_enabled', enabled);
+    expiryFeatureEnabled = enabled;
+    notifyListeners();
   }
 
   Future<void> _loadOwnerProfile() async {
@@ -321,8 +360,18 @@ class ShopStore extends ChangeNotifier {
   }
 
   Future<String?> addProduct(Product product) async {
-    if (product.name.trim().isEmpty || product.code.trim().isEmpty) {
-      return languageCode == 'bn' ? 'নাম ও কোড দিতে হবে' : 'Name and code required';
+    if (product.name.trim().isEmpty ||
+        product.code.trim().isEmpty ||
+        product.variant.trim().isEmpty) {
+      return languageCode == 'bn' ? 'সব ঘর পূরণ করুন' : 'Please fill all fields';
+    }
+    if (product.costPrice < 0 || product.sellPrice < 0) {
+      return languageCode == 'bn' ? 'সঠিক দাম দিন' : 'Enter a valid price';
+    }
+    if (product.warehouseStock < 0 || product.storeStock < 0) {
+      return languageCode == 'bn'
+          ? 'সঠিক স্টক সংখ্যা দিন'
+          : 'Enter a valid stock quantity';
     }
     final exists = await _repo.getProductByCode(product.code);
     if (exists != null) {

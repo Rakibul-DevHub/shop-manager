@@ -153,11 +153,15 @@ class AppText {
   String get cartAdded => isBn ? 'কার্টে যোগ হয়েছে' : 'Added to cart';
 
   String get productsTitle => isBn ? 'স্টোর / স্টক' : 'Store / Stock';
+  String get productsTitleSimple => isBn ? 'পণ্য' : 'Products';
   String get storeTab => isBn ? 'স্টোর (দোকান)' : 'Store (shop)';
   String get stockTab => isBn ? 'স্টক (ওয়্যারহাউস)' : 'Stock (warehouse)';
   String get storeHint => isBn
       ? 'দোকানের পণ্য — অফার সেট করুন, স্টোর পরিমাণ দেখুন'
       : 'Shop floor — set offers and see store qty';
+  String get storeHintSimple => isBn
+      ? 'পণ্য যোগ করুন, অফার সেট করুন, বিক্রি করুন'
+      : 'Add products, set offers, and sell';
   String get stockHint => isBn
       ? 'মূল ওয়্যারহাউস — পণ্য যোগ ও স্টোরে পাঠান'
       : 'Main warehouse — add products and send to store';
@@ -193,6 +197,16 @@ class AppText {
   String get sellPriceField => isBn ? 'বিক্রি দাম' : 'Sell price';
   String get stockCount => isBn ? 'স্টক সংখ্যা' : 'Stock count';
   String get saveProduct => isBn ? 'পণ্য সেভ করুন' : 'Save product';
+  String get fillAllFields =>
+      isBn ? 'সব ঘর পূরণ করুন' : 'Please fill all fields';
+  String get invalidPrice =>
+      isBn ? 'সঠিক দাম দিন' : 'Enter a valid price';
+  String get invalidStockQty =>
+      isBn ? 'সঠিক স্টক সংখ্যা দিন' : 'Enter a valid stock quantity';
+  String get expiryRequired =>
+      isBn ? 'মেয়াদ তারিখ দিন' : 'Please set expiry date';
+  String get discountValueRequired =>
+      isBn ? 'ছাড়ের মান দিন' : 'Enter discount value';
   String get expiryDate => isBn ? 'মেয়াদ উত্তীর্ণের তারিখ' : 'Expiry date';
   String get expiryDateOptional =>
       isBn ? 'ঐচ্ছিক (খাবার ইত্যাদি)' : 'Optional (food / perishable)';
@@ -331,6 +345,16 @@ class AppText {
   String get settings => isBn ? 'সেটিংস' : 'Settings';
   String get settingsHint =>
       isBn ? 'ভাষা ও দোকান তথ্য' : 'Language and shop info';
+  String get featureOptions => isBn ? 'ফিচার অপশন' : 'Feature options';
+  String get warehouseInventory =>
+      isBn ? 'স্টক (ওয়্যারহাউস)' : 'Stock (warehouse)';
+  String get warehouseInventoryHint => isBn
+      ? 'চালু করলে স্টোর ও ওয়্যারহাউস আলাদা থাকবে'
+      : 'When on, store and warehouse stock are separate';
+  String get expiryTracking => isBn ? 'মেয়াদ ট্র্যাকিং' : 'Expiry tracking';
+  String get expiryTrackingHint => isBn
+      ? 'চালু করলে পণ্যে মেয়াদ তারিখ ও সতর্কতা পাবেন'
+      : 'When on, products can have expiry dates and alerts';
   String get logout => isBn ? 'লগ আউট' : 'Log out';
   String get settingsSaved =>
       isBn ? 'সেটিংস সেভ হয়েছে' : 'Settings saved';

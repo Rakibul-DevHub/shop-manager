@@ -552,6 +552,8 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
 
   Widget _buildSelectedCard(AppText t) {
     final p = _selected!;
+    final warehouseOn =
+        context.watch<ShopStore>().warehouseInventoryEnabled;
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
@@ -600,7 +602,9 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
                     ),
                   ),
                   Text(
-                    '${p.variant} • ${t.storeQty}: ${p.storeStock}  •  ${t.warehouseQty}: ${p.warehouseStock}',
+                    warehouseOn
+                        ? '${p.variant} • ${t.storeQty}: ${p.storeStock}  •  ${t.warehouseQty}: ${p.warehouseStock}'
+                        : '${p.variant} • ${t.stock}: ${p.storeStock}',
                     style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
