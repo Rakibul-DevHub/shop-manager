@@ -90,7 +90,7 @@ class AppText {
 
   String get quickSellTitle => isBn ? 'দ্রুত বিক্রি' : 'Quick Sell';
   String get quickSellHint =>
-      isBn ? 'কোড দিন, বিক্রি শেষ করুন' : 'Enter code, finish sale';
+      isBn ? 'স্ক্যান কোড, বিক্রি শেষ করুন' : 'Scan code, finish sale';
   String get scanCodeTitle => isBn ? 'কোড স্ক্যান' : 'Scan code';
   String get scanCodeHint => isBn
       ? 'পণ্যের QR / বারকোড ক্যামেরায় ধরুন'
@@ -161,7 +161,7 @@ class AppText {
       : 'Shop floor — set offers and see store qty';
   String get storeHintSimple => isBn
       ? 'পণ্য যোগ করুন, অফার সেট করুন, বিক্রি করুন'
-      : 'Add products, set offers, and sell';
+      : 'Add prod ucts, set offers, and sell';
   String get stockHint => isBn
       ? 'মূল ওয়্যারহাউস — পণ্য যোগ ও স্টোরে পাঠান'
       : 'Main warehouse — add products and send to store';

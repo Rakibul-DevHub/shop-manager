@@ -509,10 +509,6 @@ class _QuickSellScreenState extends State<QuickSellScreen> {
                 }),
               ),
               const SizedBox(height: 12),
-              const TapHint(
-                number: 1,
-                text: 'Scan or type code, add lines to cart, then checkout',
-              ),
               _buildCodeField(t),
               const SizedBox(height: 12),
               if (_selected != null) _buildSelectedCard(t),

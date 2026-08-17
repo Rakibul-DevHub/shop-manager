@@ -61,10 +61,6 @@ class HomeScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
               children: [
-                const TapHint(
-                  number: 1,
-                  text: 'Tap Quick Sell to open the rear camera scanner',
-                ),
                 Material(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(16),
@@ -87,8 +83,6 @@ class HomeScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const TapMark(1, tooltip: 'Tap here → Quick Sell'),
-                          const SizedBox(width: 12),
                           Container(
                             width: 48,
                             height: 48,
@@ -152,12 +146,6 @@ class HomeScreen extends StatelessWidget {
                       child: Text(t.viewReport),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                const TapHint(
-                  number: 2,
-                  text:
-                      'Tap a summary card for history, dues, or expense',
                 ),
                 const SizedBox(height: 8),
                 LayoutBuilder(
