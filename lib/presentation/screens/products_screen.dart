@@ -7,7 +7,6 @@ import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/product_list_tile.dart';
 import '../../core/widgets/screen_header.dart';
-import '../../core/widgets/tap_mark.dart';
 import '../../domain/entities/discount.dart';
 import '../../domain/entities/product.dart';
 import '../state/shop_store.dart';
@@ -176,13 +175,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
           _expiryBanner(store, t),
           const SizedBox(height: 8),
           if (isStore) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TapHint(
-                number: 1,
-                text: warehouseOn ? t.storeHint : t.storeHintSimple,
-              ),
-            ),
             if (!warehouseOn)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -196,10 +188,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
           ] else ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TapHint(number: 1, text: t.stockHint),
-            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(

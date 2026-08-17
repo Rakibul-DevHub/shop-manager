@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../state/shop_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/common_widgets.dart';
-import '../../core/widgets/tap_mark.dart';
 
 /// PDF Language Selection
 class LanguageScreen extends StatefulWidget {
@@ -56,10 +55,6 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
               ),
               const SizedBox(height: 32),
-              const TapHint(
-                number: 1,
-                text: 'English is default — tap বাংলা only if you want Bangla',
-              ),
               _LanguageCard(
                 title: 'English',
                 subtitle: 'Default',
@@ -74,10 +69,6 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 onTap: () => setState(() => _selected = 'bn'),
               ),
               const Spacer(),
-              const TapHint(
-                number: 2,
-                text: 'Then tap Next to continue',
-              ),
               PrimaryButton(
                 label: _saving ? '...' : 'Next',
                 onPressed: _saving

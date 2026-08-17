@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../state/shop_store.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/common_widgets.dart';
-import '../../core/widgets/tap_mark.dart';
 
 /// PDF Onboard 1–2: Monitor + Next
 class OnboardingScreen extends StatefulWidget {
@@ -118,10 +117,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 }),
               ),
               const SizedBox(height: 28),
-              const TapHint(
-                number: 1,
-                text: 'Tap Next at the bottom to continue',
-              ),
               PrimaryButton(
                 label: 'Next',
                 onPressed: _finishing

@@ -5,7 +5,6 @@ import '../../core/text/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/offline_badge.dart';
-import '../../core/widgets/tap_mark.dart';
 import '../state/shop_store.dart';
 import 'daily_report_screen.dart';
 import 'due_customers_screen.dart';

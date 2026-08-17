@@ -5,7 +5,6 @@ import '../../core/text/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/screen_header.dart';
-import '../../core/widgets/tap_mark.dart';
 import '../state/shop_store.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
@@ -85,13 +84,6 @@ class MoreScreen extends StatelessWidget {
             title: t.moreTitle,
             subtitle: t.moreHint,
             trailing: OfflineBadge(label: t.offline),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: TapHint(
-              number: 1,
-              text: 'Profile, staff, access levels, and settings',
-            ),
           ),
           ...items.map(
             (item) => Padding(

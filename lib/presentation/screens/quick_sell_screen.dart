@@ -6,7 +6,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/screen_header.dart';
-import '../../core/widgets/tap_mark.dart';
 import '../../domain/entities/cart.dart';
 import '../../domain/entities/discount.dart';
 import '../../domain/entities/product.dart';
