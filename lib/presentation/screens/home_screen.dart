@@ -214,19 +214,13 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                         _SummaryCard(
-                          icon: Icons.warning_amber_rounded,
-                          label: t.lowStock,
-                          value: '${store.lowStockProducts.length}',
-                          tint: store.lowStockProducts.isEmpty
-                              ? AppColors.primaryLight
-                              : const Color(0xFFFFF1E8),
-                          iconColor: store.lowStockProducts.isEmpty
-                              ? AppColors.primary
-                              : AppColors.accent,
+                          icon: Icons.receipt_long_outlined,
+                          label: t.todayExpense,
+                          value: formatTaka(store.todayExpenseTotal),
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => const LowStockScreen(),
+                                builder: (_) => const ExpenseScreen(),
                               ),
                             );
                           },
@@ -247,13 +241,19 @@ class HomeScreen extends StatelessWidget {
                           },
                         ),
                         _SummaryCard(
-                          icon: Icons.receipt_long_outlined,
-                          label: t.todayExpense,
-                          value: formatTaka(store.todayExpenseTotal),
+                          icon: Icons.warning_amber_rounded,
+                          label: t.lowStock,
+                          value: '${store.lowStockProducts.length}',
+                          tint: store.lowStockProducts.isEmpty
+                              ? AppColors.primaryLight
+                              : const Color(0xFFFFF1E8),
+                          iconColor: store.lowStockProducts.isEmpty
+                              ? AppColors.primary
+                              : AppColors.accent,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => const ExpenseScreen(),
+                                builder: (_) => const LowStockScreen(),
                               ),
                             );
                           },
