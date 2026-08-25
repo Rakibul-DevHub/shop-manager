@@ -290,15 +290,34 @@ class ShopStore extends ChangeNotifier {
   }
 
   Future<String?> saveOwnerProfile(OwnerProfile profile) async {
-    if (profile.name.trim().isEmpty) {
+    final name = profile.name.trim();
+    if (name.isEmpty) {
       return languageCode == 'bn' ? 'নাম দিন' : 'Enter your name';
     }
-    await _repo.setSetting('profile_name', profile.name.trim());
-    await _repo.setSetting('profile_phone', profile.phone.trim());
+    if (!RegExp(r'^[\p{L}\s]+$', unicode: true).hasMatch(name)) {
+      return languageCode == 'bn'
+          ? 'নামে শুধু অক্ষর ব্যবহার করুন'
+          : 'Name can contain letters only';
+    }
+
+    final phoneRaw = profile.phone.trim();
+    var localDigits = phoneRaw.replaceAll(RegExp(r'\D'), '');
+    if (localDigits.startsWith('880') && localDigits.length > 11) {
+      localDigits = localDigits.substring(3);
+    }
+    if (localDigits.isNotEmpty && localDigits.length != 11) {
+      return languageCode == 'bn'
+          ? 'ফোন নম্বর ১১ ডিজিট হতে হবে'
+          : 'Phone number must be 11 digits';
+    }
+    final phone = localDigits.isEmpty ? '' : '+880$localDigits';
+
+    await _repo.setSetting('profile_name', name);
+    await _repo.setSetting('profile_phone', phone);
     await _repo.setSetting('profile_email', profile.email.trim());
     ownerProfile = OwnerProfile(
-      name: profile.name.trim(),
-      phone: profile.phone.trim(),
+      name: name,
+      phone: phone,
       email: profile.email.trim(),
     );
     notifyListeners();

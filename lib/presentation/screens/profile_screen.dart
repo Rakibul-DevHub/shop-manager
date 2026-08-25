@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/text/app_text.dart';
@@ -16,6 +17,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  static const _countryCode = '+88';
+
   late final TextEditingController _name;
   late final TextEditingController _phone;
   late final TextEditingController _email;
@@ -26,8 +29,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     final p = context.read<ShopStore>().ownerProfile;
     _name = TextEditingController(text: p.name);
-    _phone = TextEditingController(text: p.phone);
+    _phone = TextEditingController(text: _localPhoneDigits(p.phone));
     _email = TextEditingController(text: p.email);
+  }
+
+  /// Strip +880 / 880 so the field shows the 11 local digits only.
+  static String _localPhoneDigits(String raw) {
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('880') && digits.length > 11) {
+      digits = digits.substring(3);
+    }
+    if (digits.length > 11) {
+      digits = digits.substring(digits.length - 11);
+    }
+    return digits;
   }
 
   @override
@@ -42,10 +57,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _saving = true);
     final store = context.read<ShopStore>();
     final t = AppText(store.languageCode);
+    final localPhone = _phone.text.trim();
     final error = await store.saveOwnerProfile(
       OwnerProfile(
         name: _name.text,
-        phone: _phone.text,
+        phone: localPhone.isEmpty ? '' : '$_countryCode$localPhone',
         email: _email.text,
       ),
     );
@@ -128,14 +144,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
+            keyboardType: TextInputType.name,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                RegExp(r'[\p{L}\s]', unicode: true),
+              ),
+            ],
             decoration: InputDecoration(labelText: t.userName),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _phone,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(labelText: t.phone),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(11),
+            ],
+            decoration: InputDecoration(
+              labelText: t.phone,
+              prefixText: '$_countryCode ',
+              hintText: '01XXXXXXXXX',
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
