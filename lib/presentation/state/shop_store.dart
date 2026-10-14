@@ -346,6 +346,21 @@ class ShopStore extends ChangeNotifier {
     return null;
   }
 
+  /// Clears the active shop session and returns the user to shop setup.
+  /// Keeps language, onboarding, and local business data (products, sales).
+  Future<void> logout() async {
+    await _repo.clearShop();
+    await _repo.removeSetting('user_login');
+    await _repo.removeSetting('profile_name');
+    await _repo.removeSetting('profile_phone');
+    await _repo.removeSetting('profile_email');
+    shop = null;
+    currentUser = null;
+    ownerProfile = const OwnerProfile();
+    parkedBills = [];
+    notifyListeners();
+  }
+
   Future<String?> saveStaff(StaffMember member) async {
     if (member.name.trim().isEmpty || member.phone.trim().isEmpty) {
       return languageCode == 'bn'

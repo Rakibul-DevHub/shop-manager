@@ -323,6 +323,11 @@ class AppDatabase {
     }
   }
 
+  Future<void> clearShop() async {
+    final db = await database;
+    await db.delete('shop');
+  }
+
   // ---- Products ----
   Future<List<Product>> getProducts() async {
     final db = await database;

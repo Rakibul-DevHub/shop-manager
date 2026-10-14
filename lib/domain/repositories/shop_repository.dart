@@ -18,6 +18,7 @@ abstract class ShopRepository {
   // Shop
   Future<ShopProfile?> getShop();
   Future<void> upsertShop(ShopProfile shop);
+  Future<void> clearShop();
 
   // Auth (optional / future)
   Future<int> insertUser(AppUser user);

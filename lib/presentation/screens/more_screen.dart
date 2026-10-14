@@ -14,6 +14,32 @@ import 'staff_list_screen.dart';
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
+  Future<void> _confirmLogout(BuildContext context) async {
+    final store = context.read<ShopStore>();
+    final t = AppText(store.languageCode);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.logout),
+        content: Text(t.logoutConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: Text(t.logout),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await store.logout();
+    // AppGate switches to ShopSetupScreen when shop is cleared.
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<ShopStore>();
@@ -75,6 +101,13 @@ class MoreScreen extends StatelessWidget {
           );
         },
       ),
+      _MoreItem(
+        title: t.logout,
+        subtitle: t.logoutHint,
+        icon: Icons.logout,
+        danger: true,
+        onTap: () => _confirmLogout(context),
+      ),
     ];
 
     return SafeArea(
@@ -92,12 +125,20 @@ class MoreScreen extends StatelessWidget {
                 child: ListTile(
                   onTap: item.onTap,
                   leading: CircleAvatar(
-                    backgroundColor: AppColors.primaryLight,
-                    child: Icon(item.icon, color: AppColors.primary),
+                    backgroundColor: item.danger
+                        ? AppColors.danger.withValues(alpha: 0.12)
+                        : AppColors.primaryLight,
+                    child: Icon(
+                      item.icon,
+                      color: item.danger ? AppColors.danger : AppColors.primary,
+                    ),
                   ),
                   title: Text(
                     item.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: item.danger ? AppColors.danger : null,
+                    ),
                   ),
                   subtitle: Text(item.subtitle),
                   trailing: const Icon(Icons.chevron_right),
@@ -117,10 +158,12 @@ class _MoreItem {
     required this.subtitle,
     required this.icon,
     required this.onTap,
+    this.danger = false,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
+  final bool danger;
 }

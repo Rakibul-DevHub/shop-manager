@@ -40,6 +40,9 @@ class LocalShopRepository implements ShopRepository {
   Future<void> upsertShop(ShopProfile shop) => _db.upsertShop(shop);
 
   @override
+  Future<void> clearShop() => _db.clearShop();
+
+  @override
   Future<int> insertUser(AppUser user) => _db.insertUser(user);
 
   @override

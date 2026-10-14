@@ -17,6 +17,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late String _language;
   late TextEditingController _shopNameController;
+  late TextEditingController _customTypeController;
   String? _shopType;
   late bool _warehouseEnabled;
   late bool _expiryEnabled;
@@ -28,7 +29,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final store = context.read<ShopStore>();
     _language = store.languageCode;
     _shopNameController = TextEditingController(text: store.shop?.name ?? '');
-    _shopType = store.shop?.type;
+    final existingType = store.shop?.type ?? '';
+    if (existingType.isNotEmpty &&
+        !ShopStore.shopTypes.contains(existingType)) {
+      _shopType = null;
+      _customTypeController = TextEditingController(text: existingType);
+    } else {
+      _shopType = existingType.isEmpty ? null : existingType;
+      _customTypeController = TextEditingController();
+    }
     _warehouseEnabled = store.warehouseInventoryEnabled;
     _expiryEnabled = store.expiryFeatureEnabled;
   }
@@ -36,7 +45,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _shopNameController.dispose();
+    _customTypeController.dispose();
     super.dispose();
+  }
+
+  String get _resolvedType {
+    final custom = _customTypeController.text.trim();
+    if (custom.isNotEmpty) return custom;
+    return _shopType?.trim() ?? '';
   }
 
   Future<void> _save() async {
@@ -47,7 +63,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await store.setExpiryFeatureEnabled(_expiryEnabled);
     final error = await store.saveShop(
       name: _shopNameController.text,
-      type: _shopType ?? store.shop?.type ?? ShopStore.shopTypes.first,
+      type: _resolvedType.isEmpty
+          ? (store.shop?.type ?? ShopStore.shopTypes.first)
+          : _resolvedType,
       lowStockThreshold: store.lowStockThreshold,
     );
     if (!mounted) return;
@@ -127,11 +145,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               spacing: 8,
               runSpacing: 8,
               children: ShopStore.shopTypes.map((type) {
-                final selected = _shopType == type;
+                final selected = _shopType == type &&
+                    _customTypeController.text.trim().isEmpty;
                 return ChoiceChip(
                   label: Text(type),
                   selected: selected,
-                  onSelected: (_) => setState(() => _shopType = type),
+                  onSelected: (_) => setState(() {
+                    _shopType = type;
+                    _customTypeController.clear();
+                  }),
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
                     color: selected ? Colors.white : AppColors.textPrimary,
@@ -140,6 +162,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   checkmarkColor: Colors.white,
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              t.shopTypeCustomHint,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _customTypeController,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: t.shopTypeCustomLabel,
+                hintText: t.shopTypeCustomHint,
+                prefixIcon: const Icon(Icons.edit_outlined),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  if (value.trim().isNotEmpty) {
+                    _shopType = null;
+                  }
+                });
+              },
             ),
             const SizedBox(height: 24),
             Text(

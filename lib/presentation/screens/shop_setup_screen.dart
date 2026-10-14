@@ -15,13 +15,21 @@ class ShopSetupScreen extends StatefulWidget {
 
 class _ShopSetupScreenState extends State<ShopSetupScreen> {
   final _nameController = TextEditingController();
+  final _customTypeController = TextEditingController();
   String? _selectedType;
   bool _loading = false;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _customTypeController.dispose();
     super.dispose();
+  }
+
+  String get _resolvedType {
+    final custom = _customTypeController.text.trim();
+    if (custom.isNotEmpty) return custom;
+    return _selectedType?.trim() ?? '';
   }
 
   Future<void> _submit() async {
@@ -29,7 +37,7 @@ class _ShopSetupScreenState extends State<ShopSetupScreen> {
     final store = context.read<ShopStore>();
     final error = await store.saveShop(
       name: _nameController.text,
-      type: _selectedType ?? '',
+      type: _resolvedType,
     );
     if (!mounted) return;
     setState(() => _loading = false);
@@ -81,11 +89,15 @@ class _ShopSetupScreenState extends State<ShopSetupScreen> {
                 spacing: 10,
                 runSpacing: 10,
                 children: ShopStore.shopTypes.map((type) {
-                  final selected = _selectedType == type;
+                  final selected = _selectedType == type &&
+                      _customTypeController.text.trim().isEmpty;
                   return ChoiceChip(
                     label: Text(type),
                     selected: selected,
-                    onSelected: (_) => setState(() => _selectedType = type),
+                    onSelected: (_) => setState(() {
+                      _selectedType = type;
+                      _customTypeController.clear();
+                    }),
                     selectedColor: AppColors.primary,
                     labelStyle: TextStyle(
                       color: selected ? Colors.white : AppColors.textPrimary,
@@ -94,6 +106,31 @@ class _ShopSetupScreenState extends State<ShopSetupScreen> {
                     checkmarkColor: Colors.white,
                   );
                 }).toList(),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                t.shopTypeCustomHint,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _customTypeController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: t.shopTypeCustomLabel,
+                  hintText: t.shopTypeCustomHint,
+                  prefixIcon: const Icon(Icons.edit_outlined),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    if (value.trim().isNotEmpty) {
+                      _selectedType = null;
+                    }
+                  });
+                },
               ),
               const SizedBox(height: 36),
               PrimaryButton(

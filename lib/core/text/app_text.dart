@@ -44,7 +44,18 @@ class AppText {
       isBn ? 'মাত্র ১ মিনিটে শুরু করুন' : 'Start in just 1 minute';
   String get shopName => isBn ? 'দোকানের নাম' : 'Shop name';
   String get shopType => isBn ? 'দোকানের ধরন' : 'Shop type';
+  String get shopTypeCustomHint => isBn
+      ? 'অথবা নিজের ধরন লিখুন'
+      : 'Or type your own store type';
+  String get shopTypeCustomLabel =>
+      isBn ? 'কাস্টম ধরন' : 'Custom type';
   String get startNow => isBn ? 'এখনই শুরু করুন' : 'Start now';
+  String get logoutHint => isBn
+      ? 'দোকান সেটআপে ফিরে যান'
+      : 'Return to shop setup';
+  String get logoutConfirm => isBn
+      ? 'লগ আউট করবেন? দোকান সেটআপে ফিরে যাবেন।'
+      : 'Log out? You will return to shop setup.';
 
   String get home => isBn ? 'হোম' : 'Home';
   String get sell => isBn ? 'বিক্রি' : 'Sell';
